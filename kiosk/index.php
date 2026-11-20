@@ -180,6 +180,84 @@ $config = [
       /* ---- 4. เลขคิว ---- */
       .queue-big { font-size: clamp(5rem, 14vw, 9rem); font-weight: 800; color: var(--c-brand); line-height: 1; letter-spacing: .05em; }
       .done-icon { font-size: 5rem; }
+
+      /* ---- v3: แถบขั้นตอน ---- */
+      .k-steps { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .35rem; list-style: none; padding: 0; margin: 0 auto 1.6rem; }
+      .k-steps li { display: flex; align-items: center; gap: .45rem; font-weight: 700; color: var(--c-muted); font-size: 1.05rem; }
+      .k-steps li + li::before { content: ''; width: 1.6rem; height: 2px; background: var(--c-line); margin-right: .35rem; }
+      .k-steps .n { width: 2.1rem; height: 2.1rem; border-radius: 50%; border: 2px solid var(--c-line); background: #fff;
+                    display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; }
+      .k-steps li.done .n { background: var(--c-brand-2); border-color: var(--c-brand-2); color: #fff; }
+      .k-steps li.now { color: var(--c-ink); }
+      .k-steps li.now .n { border-color: var(--c-brand-2); color: var(--c-brand-2); box-shadow: 0 0 0 4px var(--c-brand-soft); }
+      .k-steps-bar { flex: 1; margin: 0; }
+      .k-steps-bar li { color: rgba(255,255,255,.65); font-size: .95rem; }
+      .k-steps-bar li + li::before { background: rgba(255,255,255,.3); }
+      .k-steps-bar .n { background: transparent; border-color: rgba(255,255,255,.45); width: 1.8rem; height: 1.8rem; font-size: .9rem; }
+      .k-steps-bar li.now { color: #fff; }
+      .k-steps-bar li.now .n { border-color: #fff; color: #fff; box-shadow: none; }
+      .k-steps-bar li.done .n { background: var(--c-accent); border-color: var(--c-accent); color: var(--c-ink); }
+      @media (max-width: 1150px) { .k-steps-bar { visibility: hidden; } }
+
+      /* ---- v3: ต้อนรับ ---- */
+      .diy-card { margin-top: 2.2rem; display: flex; gap: 1rem; align-items: center; text-align: left; max-width: 640px;
+                  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3); border-radius: 1.2rem; padding: 1rem 1.25rem; }
+      .diy-card i { font-size: 2.4rem; color: var(--c-accent); }
+      .diy-card strong { display: block; font-size: 1.15rem; }
+      .diy-card span { opacity: .85; }
+
+      /* ---- v3: หน้าเมนู ---- */
+      .menu-main { display: flex; flex-direction: column; padding: 0; overflow: hidden; min-height: 0; }
+      .menu-scroll { flex: 1; overflow-y: auto; padding: 1rem 1.25rem 1.5rem; }
+      #scr-menu .cat-tab { padding: .75rem 1.5rem; font-size: 1.15rem; }
+      #scr-menu .menu-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+      .m-card.m-noimg .m-body { padding: 1.1rem 1.1rem 1rem; min-height: 8.2rem; }
+      .m-card.m-noimg .m-name { font-size: 1.3rem; padding-right: 2.2rem; }
+      .m-card.m-noimg .m-price { font-size: 1.4rem; }
+      .m-card.m-noimg .m-ribbon { position: static; align-self: flex-start; margin: .9rem 0 0 1.1rem; }
+      .m-card.m-noimg .m-ribbon + .m-body, .m-card.m-noimg .m-ribbon ~ .m-body { padding-top: .5rem; }
+      .voice-dock { padding: .75rem 1.25rem 1rem; border-top: 1px solid var(--c-line); background: var(--c-bg); }
+      .voice-dock-btn { width: 100%; display: flex; align-items: center; gap: 1rem; padding: .9rem 1.4rem; border: 0; border-radius: 1.2rem;
+                        background: var(--c-brand); color: #fff; text-align: left; box-shadow: 0 8px 22px rgba(20,59,117,.25); }
+      .voice-dock-btn i { font-size: 2.4rem; width: 3.6rem; height: 3.6rem; border-radius: 50%; background: rgba(255,255,255,.15);
+                          display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+      .voice-dock-btn strong { display: block; font-size: 1.3rem; }
+      .voice-dock-btn small { display: block; opacity: .8; font-size: .98rem; }
+      .voice-dock-btn .vo-on { display: none; }
+      .voice-dock-btn.listening .vo-on { display: block; }
+      .voice-dock-btn.listening .vo-idle { display: none; }
+      .voice-dock-btn.listening i { animation: voicePulse 1.1s ease-in-out infinite; }
+      .voice-dock-btn:disabled { opacity: .5; }
+      .cart-line .nm { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+      .line-edit { border: 2px solid var(--c-line); background: #fff; border-radius: 999px; padding: .2rem .75rem; font-size: .95rem;
+                   font-weight: 700; color: var(--c-brand-2); flex-shrink: 0; }
+      .cart-line .ad.unsure-hint { color: #8a5a00; font-weight: 600; }
+
+      /* ---- v3: แผ่นเลือกเมนู (หัว-เนื้อหา-ท้าย ปุ่มเพิ่มเห็นเสมอ) ---- */
+      .sheet.sheet-item { width: min(760px, 100%); padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+      .item-head { display: flex; align-items: center; gap: 1rem; padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--c-line); }
+      .item-head .item-thumb { width: 120px; height: 90px; object-fit: cover; border-radius: .8rem; flex-shrink: 0; }
+      .item-head .item-title { flex: 1; }
+      .item-scroll { flex: 1; overflow-y: auto; padding: 1rem 1.5rem; }
+      .item-foot { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 1rem 1.5rem; border-top: 1px solid var(--c-line); background: var(--c-surface); }
+      .item-foot .grow { flex: 1; display: flex; gap: .6rem; justify-content: flex-end; }
+      #item-add { min-width: 15rem; }
+
+      /* ---- v3: หน้าชำระเงิน มีรายการให้ตรวจ ---- */
+      #scr-pay { justify-content: flex-start; padding-top: 1.6rem; }
+      .pay-wrap { width: min(1180px, 100%); }
+      .pay-cols { display: grid; grid-template-columns: 1fr 1.1fr; gap: 1.5rem; align-items: start; }
+      .pay-review { padding: 1.25rem 1.4rem; }
+      .pay-review .rv-line { display: flex; justify-content: space-between; gap: 1rem; padding: .65rem 0; border-bottom: 1px dashed var(--c-line); }
+      .pay-review .rv-nm { font-weight: 700; font-size: 1.1rem; }
+      .pay-review .rv-ad { color: var(--c-muted); font-size: .95rem; }
+      .pay-review .rv-note { color: #b42318; font-weight: 600; font-size: .95rem; }
+      .pay-review .rv-list { max-height: 46vh; overflow-y: auto; margin-bottom: 1rem; }
+      .pay-side { text-align: center; }
+      .pay-side .pay-total { font-size: 2.8rem; line-height: 1.1; }
+      .pay-side .pay-btn { padding: 1.3rem 1rem; font-size: 1.3rem; }
+      .pay-side .pay-btn i { font-size: 2.8rem; }
+      @media (max-width: 900px) { .pay-cols { grid-template-columns: 1fr; } .pay-review .rv-list { max-height: none; } }
     </style>
 </head>
 <body class="cust-body service-kiosk">
@@ -194,12 +272,13 @@ $config = [
         <button class="svc-btn" data-service="dine_in"><i class="ti ti-armchair"></i>ทานที่ร้าน<small>รับอาหารที่เคาน์เตอร์เมื่อเรียกคิว</small></button>
         <button class="svc-btn" data-service="takeaway"><i class="ti ti-paper-bag"></i>สั่งกลับบ้าน<small>ใส่กล่องพร้อมถุง</small></button>
     </div>
-    <p class="diy-hint"><i class="ti ti-chef-hat"></i> อยากสั่งอาหารตามสั่งแบบเลือกเอง (เช่น กะเพรา + หมูกรอบ + หมึก) สั่งกับพนักงานที่เคาน์เตอร์</p>
+    <div class="diy-card"><i class="ti ti-chef-hat"></i><div><strong>อยากได้อาหารตามสั่งแบบเลือกเอง?</strong><span>เช่น กะเพรา + หมูกรอบ + หมึก + ไข่ดาว สั่งกับพนักงานที่เคาน์เตอร์ได้เลย</span></div></div>
 </section>
 
 <!-- ============ 1b. กรอกรหัสบัตรคิว ============ -->
 <section id="scr-card" class="screen">
  <div class="pay-box text-center">
+  <ol class="k-steps" aria-label="ขั้นตอนการสั่ง"></ol>
   <h2 class="fw-bold mb-1">หยิบบัตรตู้สั่งอาหาร 1 ใบ</h2>
   <p class="text-muted mb-3">จากกล่องข้างตู้ แล้วกรอก <strong>รหัส 4 หลัก</strong> ที่อยู่บนบัตร</p>
   <div class="code-boxes" id="card-boxes"><span></span><span></span><span></span><span></span></div>
@@ -221,6 +300,7 @@ $config = [
 
 <section id="scr-member" class="screen" style="align-items:center;justify-content:center;padding:2rem">
  <div class="pay-box text-center">
+  <ol class="k-steps" aria-label="ขั้นตอนการสั่ง"></ol>
   <input type="hidden" id="member-mode" value="guest">
   <!-- ขั้นที่ 1: เลือกแบบสั่ง -->
   <div id="member-step-choose">
@@ -263,18 +343,26 @@ $config = [
         <div class="cust-brand"><i class="ti ti-chef-hat"></i> <span class="hide-sm"><?= htmlspecialchars($shopName) ?></span></div>
         <button class="cust-pill" id="btn-service" type="button"><i class="ti ti-armchair"></i> <span>ทานที่ร้าน</span></button>
         <span class="cust-pill card-pill" id="pill-card" hidden></span>
-        <div class="spacer"></div>
-        <?php if ($config['voiceEnabled']): ?>
-        <button class="cust-pill cust-pill-accent" id="btn-open-voice" type="button" data-vo-label="none" aria-pressed="false" title="กดค้างแล้วพูด"><i class="ti ti-microphone"></i> <span class="hide-sm">กดค้างพูดสั่ง</span></button>
-        <?php endif; ?>
+        <ol class="k-steps k-steps-bar" aria-label="ขั้นตอนการสั่ง"></ol>
         <button class="cust-pill" id="btn-member-edit" type="button" <?= $config['serviceReady'] ? '' : 'hidden' ?>>สมาชิก</button>
         <button class="cust-pill" id="btn-restart" type="button"><i class="ti ti-refresh"></i> <span class="hide-sm">เริ่มใหม่</span></button>
     </div>
 
     <div class="menu-layout">
         <main class="menu-main">
-            <div class="cat-tabs" id="cat-tabs"></div>
-            <div class="menu-grid" id="menu-grid"></div>
+            <div class="menu-scroll">
+                <div class="cat-tabs" id="cat-tabs"></div>
+                <div class="menu-grid" id="menu-grid"></div>
+            </div>
+            <?php if ($config['voiceEnabled']): ?>
+            <div class="voice-dock">
+                <button type="button" id="btn-voice-dock" class="voice-dock-btn voice-hold" data-vo-label="none" aria-pressed="false">
+                    <i class="ti ti-microphone"></i>
+                    <span class="vo-idle"><strong>กดค้างที่นี่ แล้วพูดสั่งอาหาร</strong><small>เช่น "กะเพราหมูสับไข่ดาว ไม่เผ็ด แล้วก็ข้าวผัดกุ้งสองจาน" · ปล่อยมือเมื่อพูดจบ</small></span>
+                    <span class="vo-on"><strong>กำลังฟัง… พูดได้เลย</strong><small>ปล่อยมือเมื่อพูดจบ ระบบใส่ตะกร้าให้ทันที</small></span>
+                </button>
+            </div>
+            <?php endif; ?>
         </main>
 
         <aside class="cart-side">
@@ -299,12 +387,22 @@ $config = [
 
 <!-- ============ 3. เลือกวิธีชำระเงิน ============ -->
 <section id="scr-pay" class="screen">
-    <div class="pay-box text-center">
-        <div class="eyebrow-c mb-2">ขั้นตอนสุดท้าย</div>
-        <h2 class="fw-bold mb-1">เลือกวิธีชำระเงิน</h2>
-        <div class="text-muted mb-2">ยอดที่ต้องชำระ</div>
-        <div class="pay-total mb-4" id="pay-total">฿0</div>
-        <p>ราคาได้รวม VAT 7% แล้ว</p>
+  <div class="pay-wrap">
+    <ol class="k-steps" aria-label="ขั้นตอนการสั่ง"></ol>
+    <div class="pay-cols">
+      <div class="pay-review cust-card">
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+          <h2 class="h3 fw-bold mb-0">ตรวจรายการก่อนจ่าย</h2>
+          <span class="cust-pill card-pill" id="pay-card" hidden></span>
+        </div>
+        <div class="text-muted mb-2" id="pay-service"></div>
+        <div class="rv-list" id="pay-lines"></div>
+        <button class="btn-touch btn-ghost w-100" id="btn-pay-back"><i class="ti ti-pencil"></i> กลับไปแก้รายการ</button>
+      </div>
+      <div class="pay-side">
+        <div class="text-muted">ยอดที่ต้องชำระ</div>
+        <div class="pay-total mb-1" id="pay-total">฿0</div>
+        <p class="small text-muted mb-3">ราคารวม VAT 7% แล้ว</p>
         <label class="addon-chip d-none mb-3" id="pay-points" style="width:fit-content;margin:0 auto .75rem"><input type="checkbox" id="use-points"> ใช้แต้มสะสมเป็นส่วนลด <span class="price">1 แต้ม = ฿1 · สูงสุด <?= min(100, max(1, (int) AppSetting::get('point_redeem_cap_percent', '50'))) ?>% ของยอดบิล</span></label>
         <div class="rcpt-box mb-4">
             <div class="rcpt-label">การรับใบเสร็จหลังชำระ</div>
@@ -315,6 +413,7 @@ $config = [
             </div>
             <small class="text-muted">ไม่รับใบเสร็จก็ยังได้รับเลขคิว</small>
         </div>
+        <div class="rcpt-label">เลือกวิธีจ่ายเพื่อยืนยันการสั่ง</div>
         <div class="pay-choices mb-4">
             <button class="pay-btn cash" data-pay="cash"><i class="ti ti-cash"></i>เงินสด<small>รับเลขคิว แล้วชำระที่เคาน์เตอร์</small></button>
             <button class="pay-btn qr" data-pay="promptpay" <?= $config['hasPromptPay'] ? '' : 'disabled' ?>>
@@ -323,8 +422,9 @@ $config = [
             </button>
         </div>
         <div class="alert alert-danger d-none" id="pay-error"></div>
-        <button class="btn-touch btn-ghost" id="btn-pay-back"><i class="ti ti-arrow-left"></i> กลับไปแก้รายการ</button>
+      </div>
     </div>
+  </div>
 </section>
 
 <!-- ============ 3b. สแกนจ่าย ============ -->
@@ -378,26 +478,31 @@ $config = [
 
 <!-- ============ แผ่นเลือกเมนู ============ -->
 <div class="sheet-backdrop" id="sheet-item">
-    <div class="sheet">
-        <div id="item-media" class="mb-3"></div>
-        <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
-            <div class="fs-3 fw-bold" id="item-name"></div>
-            <div class="fs-3 fw-bold text-success" id="item-price"></div>
+    <div class="sheet sheet-item" role="dialog" aria-modal="true" aria-labelledby="item-name">
+        <div class="item-head">
+            <div id="item-media"></div>
+            <div class="item-title">
+                <div class="fs-3 fw-bold lh-sm" id="item-name"></div>
+                <div class="fs-4 fw-bold text-success" id="item-price"></div>
+            </div>
+            <button type="button" class="btn-touch btn-ghost py-2" data-close aria-label="ปิด"><i class="ti ti-x"></i></button>
         </div>
-        <div id="item-addons-wrap" class="mb-3">
-            <div class="fw-bold mb-2">ตัวเลือกเสริม</div>
-            <div class="addon-chips" id="item-addons"></div>
+        <div class="item-scroll">
+            <div id="item-addons-wrap" class="mb-3">
+                <div class="fw-bold fs-5 mb-2">ตัวเลือกเสริม</div>
+                <div class="addon-chips" id="item-addons"></div>
+            </div>
+            <div>
+                <div class="fw-bold fs-5 mb-2">หมายเหตุถึงครัว <span class="text-muted fw-normal small">(ไม่บังคับ)</span></div>
+                <div class="addon-chips note-chips" id="item-note-chips"></div>
+                <input id="item-note" class="form-control form-control-lg mt-2" maxlength="120" autocomplete="off" placeholder="พิมพ์เพิ่มเองได้ เช่น ไม่ใส่หอม">
+            </div>
         </div>
-        <div class="mb-3">
-            <div class="fw-bold mb-2">หมายเหตุถึงครัว <span class="text-muted fw-normal small">(ไม่บังคับ)</span></div>
-            <div class="addon-chips note-chips" id="item-note-chips"></div>
-            <input id="item-note" class="form-control form-control-lg mt-2" maxlength="120" autocomplete="off" placeholder="พิมพ์เพิ่มเองได้ เช่น ไม่ใส่หอม">
-        </div>
-        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
-            <div class="stepper"><button type="button" id="item-dec">−</button><output id="item-qty">1</output><button type="button" id="item-inc">+</button></div>
-            <div class="d-flex gap-2 flex-grow-1 justify-content-end">
+        <div class="item-foot">
+            <div class="stepper"><button type="button" id="item-dec" aria-label="ลดจำนวน">−</button><output id="item-qty">1</output><button type="button" id="item-inc" aria-label="เพิ่มจำนวน">+</button></div>
+            <div class="grow">
                 <button class="btn-touch btn-ghost" data-close>ยกเลิก</button>
-                <button class="btn-touch btn-brand" id="item-add">เพิ่มลงตะกร้า <span id="item-sum"></span></button>
+                <button class="btn-touch btn-brand" id="item-add"><span id="item-add-label">เพิ่มลงตะกร้า</span> <span id="item-sum"></span></button>
             </div>
         </div>
     </div>

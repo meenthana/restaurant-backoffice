@@ -292,5 +292,5 @@
 /* หมายเหตุต่อจาน */
 .cart-line .ad.note { color: #b42318; font-weight: 600; }
 .cart-line.unsure { background: #fff8e1; border-radius: .6rem; padding-left: .4rem; padding-right: .4rem; }
-.voice-hold, #btn-open-voice { touch-action: none; user-select: none; -webkit-user-select: none; }
-.voice-hold.listening, #btn-open-voice.listening { background: #c1443c !important; color: #fff !important; }
+.voice-hold { touch-action: none; user-select: none; -webkit-user-select: none; }
+.voice-hold.listening { background: #c1443c !important; color: #fff !important; }

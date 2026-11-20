@@ -69,9 +69,28 @@
     };
 
     // ================================================================
+    // แถบขั้นตอน: บัตร → สมาชิก → เลือกอาหาร → ชำระเงิน (ซ่อนขั้นที่ร้านไม่ได้เปิดใช้)
+    var STEP_OF = { 'scr-card': 'card', 'scr-member': 'member', 'scr-menu': 'menu', 'scr-pay': 'pay' };
+    function renderSteps(screenId) {
+        var cur = STEP_OF[screenId];
+        if (!cur) return;
+        var steps = [];
+        if (CFG.cardRequired) steps.push(['card', 'บัตร']);
+        if (CFG.serviceReady) steps.push(['member', 'สมาชิก']);
+        steps.push(['menu', 'เลือกอาหาร'], ['pay', 'ชำระเงิน']);
+        var idx = steps.map(function (x) { return x[0]; }).indexOf(cur);
+        var html = steps.map(function (x, i) {
+            var cls = i < idx ? 'done' : (i === idx ? 'now' : '');
+            return '<li class="' + cls + '"' + (i === idx ? ' aria-current="step"' : '') + '><span class="n">' +
+                (i < idx ? '<i class="ti ti-check"></i>' : (i + 1)) + '</span>' + x[1] + '</li>';
+        }).join('');
+        $(screenId).querySelectorAll('.k-steps').forEach(function (ol) { ol.innerHTML = html; });
+    }
+
     function show(screenId) {
         document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('active'); });
         $(screenId).classList.add('active');
+        renderSteps(screenId);
         closeSheets();
         window.scrollTo(0, 0);
         idle.reset();
@@ -259,10 +278,8 @@
         var html = '';
         MENU.forEach(function (m) {
             if (state.category !== null && m.category !== state.category) return;
-            var img = m.image
-                ? '<img class="m-img" src="' + esc(m.image) + '" alt="" loading="lazy">'
-                : '<div class="m-img m-img-ph"><i class="ti ti-tools-kitchen-2"></i></div>';
-            html += '<button type="button" class="m-card' + (m.soldOut ? ' m-soldout' : '') + '" data-id="' + m.id + '"' + (m.soldOut ? ' disabled' : '') + '>' +
+            var img = m.image ? '<img class="m-img" src="' + esc(m.image) + '" alt="" loading="lazy">' : '';
+            html += '<button type="button" class="m-card' + (m.image ? '' : ' m-noimg') + (m.soldOut ? ' m-soldout' : '') + '" data-id="' + m.id + '"' + (m.soldOut ? ' disabled' : '') + '>' +
                 img +
                 (m.soldOut ? '<span class="m-ribbon">' + esc(m.outLabel || 'หมดวันนี้') + '</span>' : '') +
                 (qtyInCart[m.id] ? '<span class="m-badge-qty">' + qtyInCart[m.id] + '</span>' : '') +
@@ -276,24 +293,33 @@
     }
 
     // ---------- แผ่นเลือกจำนวนและ Add-on ----------
-    var editing = null; // {menuId, qty}
+    var editing = null; // {menuId, qty, key} key = แก้รายการเดิมในตะกร้า
 
-    function openItem(menuId) {
+    // ที่ว่างของเมนูนี้ ถ้ากำลังแก้รายการเดิม นับจำนวนของรายการนั้นคืนให้ด้วย
+    function roomForEdit() {
+        if (!editing) return 0;
+        var old = editing.key ? state.cart.filter(function (l) { return l.key === editing.key; })[0] : null;
+        return roomFor(editing.menuId) + (old ? old.qty : 0);
+    }
+
+    function openItem(menuId, line) {
         var m = byId[menuId];
         if (!m || m.soldOut) return;
-        if (roomFor(menuId) < 1) { toast('"' + m.name + '" ใส่ตะกร้าครบจำนวนที่ทำได้แล้ว'); return; }
-        editing = { menuId: menuId, qty: 1 };
+        if (!line && roomFor(menuId) < 1) { toast('"' + m.name + '" ใส่ตะกร้าครบจำนวนที่ทำได้แล้ว'); return; }
+        editing = { menuId: menuId, qty: line ? line.qty : 1, key: line ? line.key : null };
 
-        $('item-media').innerHTML = m.image
-            ? '<img class="hero-img" src="' + esc(m.image) + '" alt="">'
-            : '<div class="hero-img hero-ph"><i class="ti ti-tools-kitchen-2"></i></div>';
+        $('item-media').innerHTML = m.image ? '<img class="item-thumb" src="' + esc(m.image) + '" alt="">' : '';
+        $('item-media').hidden = !m.image;
+        $('item-add-label').textContent = line ? 'บันทึกการแก้ไข' : 'เพิ่มลงตะกร้า';
         $('item-name').textContent = m.name;
         $('item-price').textContent = baht(m.price);
 
         if (m.addons.length) {
             $('item-addons-wrap').style.display = '';
+            var picked = line ? line.addons : [];
             $('item-addons').innerHTML = m.addons.map(function (a) {
-                return '<label class="addon-chip"' + (a.out ? ' style="opacity:.45"' : '') + '><input type="checkbox" value="' + a.id + '"' + (a.out ? ' disabled' : '') + '>' +
+                var on = picked.indexOf(a.id) !== -1 && !a.out;
+                return '<label class="addon-chip"' + (a.out ? ' style="opacity:.45"' : '') + '><input type="checkbox" value="' + a.id + '"' + (a.out ? ' disabled' : '') + (on ? ' checked' : '') + '>' +
                     '<i class="ti ti-plus"></i>' + esc(a.name) +
                     (a.out ? ' <span class="price">(หมด)</span>' : (a.price > 0 ? ' <span class="price">+' + baht(a.price) + '</span>' : '')) + '</label>';
             }).join('');
@@ -304,9 +330,13 @@
             $('item-addons-wrap').style.display = 'none';
             $('item-addons').innerHTML = '';
         }
-        renderNoteChips($('item-note-chips'), []);
-        $('item-note').value = '';
+        // แยกหมายเหตุเดิมเป็นปุ่มลัดที่ตรงกับคำในหลังบ้าน ที่เหลือใส่ช่องพิมพ์
+        var parts = line && line.note ? line.note.split(/\s*,\s*/) : [];
+        var kw = CFG.noteKeywords || [];
+        renderNoteChips($('item-note-chips'), parts.filter(function (x) { return kw.indexOf(x) !== -1; }));
+        $('item-note').value = parts.filter(function (x) { return x && kw.indexOf(x) === -1; }).join(', ');
         updateItemSum();
+        $('sheet-cart').classList.remove('open');
         openSheet('sheet-item');
     }
 
@@ -336,8 +366,8 @@
 
     $('item-inc').addEventListener('click', function () {
         if (!editing) return;
-        if (editing.qty >= Math.min(20, roomFor(editing.menuId))) {
-            if (editing.qty < 20) toast('เมนูนี้เหลือทำได้อีก ' + roomFor(editing.menuId) + ' จาน');
+        if (editing.qty >= Math.min(20, roomForEdit())) {
+            if (editing.qty < 20) toast('เมนูนี้ทำได้สูงสุด ' + roomForEdit() + ' จาน');
             return;
         }
         editing.qty++; updateItemSum();
@@ -345,7 +375,15 @@
     $('item-dec').addEventListener('click', function () { if (editing && editing.qty > 1) { editing.qty--; updateItemSum(); } });
     $('item-add').addEventListener('click', function () {
         if (!editing) return;
+        var at = -1;
+        if (editing.key) {
+            at = state.cart.map(function (l) { return l.key; }).indexOf(editing.key);
+            state.cart.splice(at, 1);
+        }
+        var n = state.cart.length;
         addToCart(editing.menuId, editing.qty, selectedAddons(), composeNote($('item-note-chips'), $('item-note')));
+        // แก้แล้วให้อยู่ตำแหน่งเดิมในตะกร้า
+        if (at >= 0 && state.cart.length > n) { state.cart.splice(at, 0, state.cart.pop()); renderCart(); }
         $('sheet-item').classList.remove('open');
         editing = null;
     });
@@ -416,10 +454,12 @@
                 var a = m.addons.filter(function (x) { return x.id === aid; })[0];
                 return a ? a.name : '';
             }).filter(Boolean);
-            return '<div class="cart-line' + (l.unsure ? ' unsure' : '') + '"><div class="nm">' + esc(m.name) +
-                (l.unsure ? ' <span class="badge text-bg-warning">ตรวจอีกครั้ง</span>' : '') + '</div>' +
+            return '<div class="cart-line' + (l.unsure ? ' unsure' : '') + '"><div class="nm"><span>' + esc(m.name) +
+                (l.unsure ? ' <span class="badge text-bg-warning">ตรวจอีกครั้ง</span>' : '') + '</span>' +
+                '<button type="button" class="line-edit" data-edit="' + esc(l.key) + '"><i class="ti ti-pencil"></i> แก้ไข</button></div>' +
                 (names.length ? '<div class="ad">+ ' + esc(names.join(', ')) + '</div>' : '') +
                 (l.note ? '<div class="ad note"><i class="ti ti-message-2"></i> ' + esc(l.note) + '</div>' : '') +
+                (l.unsure ? '<div class="ad unsure-hint">ระบบฟังไม่ชัด ตรวจว่าถูกเมนูไหม ถ้าไม่ใช่กดถังขยะหรือแก้ไข</div>' : '') +
                 '<div class="row2"><div class="stepper stepper-sm">' +
                 '<button type="button" data-line="' + esc(l.key) + '" data-d="-1">' + (l.qty === 1 ? '<i class="ti ti-trash"></i>' : '−') + '</button>' +
                 '<output>' + l.qty + '</output>' +
@@ -432,6 +472,30 @@
         container.querySelectorAll('[data-line]').forEach(function (b) {
             b.addEventListener('click', function () { changeLine(b.dataset.line, +b.dataset.d); });
         });
+        container.querySelectorAll('[data-edit]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var l = state.cart.filter(function (x) { return x.key === b.dataset.edit; })[0];
+                if (l) openItem(l.menuId, l);
+            });
+        });
+    }
+
+    // หน้าชำระเงิน: แสดงรายการทั้งหมดให้ลูกค้าตรวจก่อนจ่าย
+    function renderPayReview() {
+        $('pay-lines').innerHTML = state.cart.map(function (l) {
+            var m = byId[l.menuId];
+            var names = l.addons.map(function (aid) {
+                var a = m.addons.filter(function (x) { return x.id === aid; })[0];
+                return a ? a.name : '';
+            }).filter(Boolean);
+            return '<div class="rv-line"><div><div class="rv-nm">' + esc(m.name) + ' × ' + l.qty + '</div>' +
+                (names.length ? '<div class="rv-ad">+ ' + esc(names.join(', ')) + '</div>' : '') +
+                (l.note ? '<div class="rv-note">หมายเหตุ: ' + esc(l.note) + '</div>' : '') +
+                '</div><div class="fw-bold text-nowrap">' + baht(lineTotal(l.menuId, l.qty, l.addons)) + '</div></div>';
+        }).join('');
+        $('pay-service').textContent = (state.service === 'takeaway' ? 'สั่งกลับบ้าน' : 'ทานที่ร้าน') + ' · ' + cartCount() + ' จาน';
+        $('pay-card').hidden = !state.card;
+        $('pay-card').textContent = state.card ? state.card.label : '';
     }
 
     function renderCart() {
@@ -455,14 +519,14 @@
     $('btn-m-checkout').addEventListener('click', goPay);
 
     // ================================================================
-    if ($('btn-open-voice') && window.VoiceOrder) {
+    if ($('btn-voice-dock') && window.VoiceOrder) {
         // กดปุ่มไมค์ครั้งเดียวก็เริ่มฟังเลย (กดค้าง = ฟังเฉพาะตอนกด ตัดเสียงคนคุยกันช่วงที่ไม่ได้กด)
         var voiceClose = null;
         var closeVoice = function () { clearTimeout(voiceClose); $('sheet-voice').classList.remove('open'); };
         VoiceOrder.init({
             mode: 'auto',
             apiUrl: CFG.voiceApiUrl,
-            holdButtons: [$('btn-open-voice'), $('btn-voice')],
+            holdButtons: [$('btn-voice-dock'), $('btn-voice')],
             panel: $('voice-panel'),
             onStart: function () {
                 clearTimeout(voiceClose);
@@ -506,12 +570,14 @@
             renderMenu();
             if (!d.ok) { toast(d.error || 'มีบางรายการสั่งไม่ได้'); return; }
             $('sheet-cart').classList.remove('open');
+            renderPayReview();
             $('pay-total').textContent = baht(cartTotal());
             togglePayPoints();
             $('pay-error').classList.add('d-none');
             show('scr-pay');
         })
         .catch(function () {
+            renderPayReview();
             $('pay-total').textContent = baht(cartTotal());
             togglePayPoints();
             $('pay-error').classList.add('d-none');
