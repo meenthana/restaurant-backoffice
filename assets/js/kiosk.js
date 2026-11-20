@@ -365,8 +365,9 @@
     }
     function lineTotal(menuId, qty, addons) { return unitPrice(menuId, addons) * qty; }
 
-    function addToCart(menuId, qty, addons, note) {
+    function addToCart(menuId, qty, addons, note, opts) {
         note = (note || '').trim().slice(0, 120);
+        opts = opts || {};
         var m = byId[menuId];
         if (!m || m.soldOut) return;
         // เก็บเฉพาะ Add-on ที่เมนูนี้เปิดให้เลือกจริง (กันผลจากการสั่งด้วยเสียงหลุดมา)
@@ -378,10 +379,12 @@
 
         var key = lineKey(menuId, addons, note);
         var line = state.cart.filter(function (l) { return l.key === key; })[0];
-        if (line) line.qty = Math.min(20, line.qty + qty);
-        else state.cart.push({ key: key, menuId: menuId, qty: Math.min(20, qty), addons: addons, note: note });
+        var before = line ? line.qty : 0;
+        if (line) { line.qty = Math.min(20, line.qty + qty); if (opts.unsure) line.unsure = true; }
+        else { line = { key: key, menuId: menuId, qty: Math.min(20, qty), addons: addons, note: note, unsure: !!opts.unsure }; state.cart.push(line); }
         renderCart();
         renderMenu();
+        return { key: key, qty: line.qty - before };
     }
 
     function changeLine(key, delta) {
@@ -413,7 +416,8 @@
                 var a = m.addons.filter(function (x) { return x.id === aid; })[0];
                 return a ? a.name : '';
             }).filter(Boolean);
-            return '<div class="cart-line"><div class="nm">' + esc(m.name) + '</div>' +
+            return '<div class="cart-line' + (l.unsure ? ' unsure' : '') + '"><div class="nm">' + esc(m.name) +
+                (l.unsure ? ' <span class="badge text-bg-warning">ตรวจอีกครั้ง</span>' : '') + '</div>' +
                 (names.length ? '<div class="ad">+ ' + esc(names.join(', ')) + '</div>' : '') +
                 (l.note ? '<div class="ad note"><i class="ti ti-message-2"></i> ' + esc(l.note) + '</div>' : '') +
                 '<div class="row2"><div class="stepper stepper-sm">' +
@@ -452,21 +456,31 @@
 
     // ================================================================
     if ($('btn-open-voice') && window.VoiceOrder) {
-        $('btn-open-voice').addEventListener('click', function () {
-            $('voice-panel').innerHTML = '';
-            openSheet('sheet-voice');
-        });
+        // กดปุ่มไมค์ครั้งเดียวก็เริ่มฟังเลย (กดค้าง = ฟังเฉพาะตอนกด ตัดเสียงคนคุยกันช่วงที่ไม่ได้กด)
+        var voiceClose = null;
+        var closeVoice = function () { clearTimeout(voiceClose); $('sheet-voice').classList.remove('open'); };
         VoiceOrder.init({
+            mode: 'auto',
             apiUrl: CFG.voiceApiUrl,
-            button: $('btn-voice'),
+            holdButtons: [$('btn-open-voice'), $('btn-voice')],
             panel: $('voice-panel'),
-            onConfirm: function (items) {
-                items.forEach(function (it) {
-                    addToCart(it.menu_id, it.quantity, (it.addons || []).map(function (a) { return a.addon_id; }));
+            onStart: function () {
+                clearTimeout(voiceClose);
+                if (!$('sheet-voice').classList.contains('open')) openSheet('sheet-voice');
+            },
+            onAdd: function (items) {
+                return items.map(function (it) {
+                    return addToCart(it.menu_id, it.quantity, (it.addons || []).map(function (a) { return a.addon_id; }),
+                                     it.note || '', { unsure: !!it.needs_confirm });
                 });
-                setTimeout(function () { $('sheet-voice').classList.remove('open'); }, 700);
+            },
+            onRemove: function (h) { if (h) changeLine(h.key, -h.qty); },
+            onDone: function (auto) {
+                clearTimeout(voiceClose);
+                voiceClose = setTimeout(closeVoice, auto ? 4000 : 0);
             }
         });
+        $('voice-panel').addEventListener('pointerdown', function () { clearTimeout(voiceClose); });
     }
 
     // ================================================================

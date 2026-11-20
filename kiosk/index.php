@@ -265,7 +265,7 @@ $config = [
         <span class="cust-pill card-pill" id="pill-card" hidden></span>
         <div class="spacer"></div>
         <?php if ($config['voiceEnabled']): ?>
-        <button class="cust-pill cust-pill-accent" id="btn-open-voice" type="button"><i class="ti ti-microphone"></i> <span class="hide-sm">สั่งด้วยเสียง</span></button>
+        <button class="cust-pill cust-pill-accent" id="btn-open-voice" type="button" data-vo-label="none" aria-pressed="false" title="กดค้างแล้วพูด"><i class="ti ti-microphone"></i> <span class="hide-sm">กดค้างพูดสั่ง</span></button>
         <?php endif; ?>
         <button class="cust-pill" id="btn-member-edit" type="button" <?= $config['serviceReady'] ? '' : 'hidden' ?>>สมาชิก</button>
         <button class="cust-pill" id="btn-restart" type="button"><i class="ti ti-refresh"></i> <span class="hide-sm">เริ่มใหม่</span></button>
@@ -421,8 +421,9 @@ $config = [
             <div class="fs-4 fw-bold"><i class="ti ti-microphone text-success"></i> สั่งด้วยเสียง</div>
             <button class="btn-touch btn-ghost py-2" data-close><i class="ti ti-x"></i></button>
         </div>
-        <p class="text-muted">กดปุ่มแล้วพูดได้เลย เช่น <strong>"กะเพราหมูสองจาน ไข่ดาวด้วย แล้วก็ข้าวผัดกุ้งหนึ่งที่"</strong></p>
-        <button type="button" id="btn-voice" class="btn-touch btn-brand w-100 mb-3"><i class="ti ti-microphone"></i> สั่งด้วยเสียง</button>
+        <p class="text-muted mb-2"><strong>กดค้างที่ปุ่ม</strong> แล้วพูด ปล่อยปุ่มเมื่อพูดจบ ระบบใส่ตะกร้าให้ทันที</p>
+        <p class="text-muted small">เช่น <strong>"กะเพราหมูสับไข่ดาวเยิ้มๆ ไม่เผ็ด แล้วก็ข้าวผัดกุ้งสองจาน"</strong> · พูดใกล้ตู้ เสียงคนคุยกันข้างหลังจะไม่ถูกใส่ตะกร้า</p>
+        <button type="button" id="btn-voice" class="btn-touch btn-brand w-100 mb-3 voice-hold" aria-pressed="false"><i class="ti ti-microphone"></i> กดค้างแล้วพูด</button>
         <div id="voice-panel" class="voice-panel"></div>
     </div>
 </div>
