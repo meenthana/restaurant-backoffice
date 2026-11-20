@@ -182,6 +182,18 @@ class KioskOrder
         )->fetchAll();
     }
 
+    public static function isReadyForPickup(int $orderId): bool
+    {
+        $stmt = getDB()->prepare(
+            "SELECT COUNT(*) FROM orders o
+             WHERE o.order_id = ? AND o.is_paid = 1 AND (o.status = 'ready' OR (o.status = 'active'
+                   AND EXISTS (SELECT 1 FROM kitchen_tickets k WHERE k.order_id = o.order_id AND k.status = 'ready')
+                   AND NOT EXISTS (SELECT 1 FROM kitchen_tickets k WHERE k.order_id = o.order_id AND k.status IN ('queued','cooking'))))"
+        );
+        $stmt->execute([$orderId]);
+        return (int) $stmt->fetchColumn() === 1;
+    }
+
     // แคชเชียร์รับเงินสด (หรือดูสลิปบนมือถือลูกค้าแล้วกดรับเอง)
     public static function acceptCounterPayment(int $orderId, string $method, float $cashReceived, ?int $userId): array
     {

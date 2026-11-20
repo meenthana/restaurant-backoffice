@@ -203,7 +203,18 @@
         if(mode!=='guest' && !/^0[689]\d{8}$/.test(phone)) { $('member-error').textContent='กรุณากรอกเบอร์มือถือ 10 หลัก (ขึ้นต้น 06 08 หรือ 09)'; return; }
         if(mode==='register' && !$('member-name').value.trim()) { $('member-error').textContent='กรุณากรอกชื่อที่ใช้เรียก'; return; }
         if(mode==='register' && !$('member-consent').checked) { $('member-error').textContent='กรุณาติ๊กยินยอมก่อนสมัครสมาชิก'; return; }
-        show('scr-menu');
+        var btn=$('btn-member-next');
+        if(btn.disabled) return;
+        btn.disabled=true;
+        fetch(CFG.apiUrl + '?action=member', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: mode, phone: phone })
+        }).then(function (r) { return r.json(); }).then(function (d) {
+            if (d.ok) show('scr-menu');
+            else $('member-error').textContent = d.error || 'ตรวจเบอร์ไม่สำเร็จ';
+        }).catch(function () {
+            $('member-error').textContent = 'เชื่อมต่อไม่ได้ กรุณาลองใหม่';
+        }).finally(function () { btn.disabled = false; });
     });
     function setService(svc) {
         state.service = svc;

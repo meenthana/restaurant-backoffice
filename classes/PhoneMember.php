@@ -3,6 +3,29 @@ require_once __DIR__.'/ServiceFlow.php';
 
 class PhoneMember
 {
+    // ตรวจเบอร์ที่ตู้ก่อนเข้าหน้าเมนู (อ่านอย่างเดียว ไม่สร้างสมาชิก): member | none | duplicate | suspended
+    public static function lookup(string $phone): string
+    {
+        if (!ServiceFlow::ready()) return 'none';
+        $phone = ServiceFlow::phone($phone);
+        $db = getDB();
+        $stmt = $db->prepare('SELECT member_id FROM member_phone_accounts WHERE phone=? AND member_id IS NOT NULL');
+        $stmt->execute([$phone]);
+        $ids = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+        if (!$ids) {
+            foreach ($db->query("SELECT member_id,phone FROM members WHERE phone IS NOT NULL AND phone<>''")->fetchAll() as $row) {
+                try { if (ServiceFlow::phone($row['phone']) === $phone) $ids[] = (int)$row['member_id']; }
+                catch (InvalidArgumentException $e) { }
+            }
+        }
+        if (!$ids) return 'none';
+        if (count(array_unique($ids)) > 1) return 'duplicate';
+        $stmt = $db->prepare('SELECT is_suspended FROM members WHERE member_id=?');
+        $stmt->execute([$ids[0]]);
+        $suspended = $stmt->fetchColumn();
+        return ($suspended === false || (int)$suspended === 1) ? 'suspended' : 'member';
+    }
+
     // Called only from order submission; no public directory lookup or profile disclosure.
     public static function resolve(string $phone, bool $register, string $name, bool $consent): int
     {

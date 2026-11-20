@@ -56,6 +56,34 @@ try {
         $_SESSION['kiosk_card_fail'] = [];
         out(['ok' => true, 'card_no' => (int) $card['card_no'], 'card_label' => QueueCard::label((int) $card['card_no'])]);
     }
+    // ตรวจเบอร์สมาชิกก่อนเข้าหน้าเมนู: เบอร์ที่ไม่ได้สมัครไว้ไปต่อไม่ได้ (จำกัดการเดาเบอร์)
+    if ($action === 'member' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (empty($_SESSION['kiosk_mode'])) out(['ok' => false, 'error' => 'กรุณาเปิดหน้าตู้สั่งอาหารใหม่อีกครั้ง'], 403);
+        $tries = array_filter($_SESSION['kiosk_member_fail'] ?? [], fn($t) => $t > time() - 300);
+        if (count($tries) >= 8) out(['ok' => false, 'error' => 'กรอกเบอร์ไม่ตรงหลายครั้ง กรุณาเรียกพนักงาน หรือรอ 5 นาที'], 429);
+        $body = json_decode(file_get_contents('php://input'), true) ?: [];
+        $mode = (string) ($body['mode'] ?? '');
+        if (!in_array($mode, ['existing', 'register'], true)) out(['ok' => false, 'error' => 'ตัวเลือกสมาชิกไม่ถูกต้อง'], 422);
+        try {
+            $status = PhoneMember::lookup((string) ($body['phone'] ?? ''));
+        } catch (InvalidArgumentException $e) {
+            out(['ok' => false, 'error' => $e->getMessage()], 422);
+        }
+        $error = null;
+        if ($status === 'duplicate') $error = 'เบอร์นี้มีข้อมูลซ้ำ กรุณาให้พนักงานตรวจสอบ หรือเลือกไม่ใช่สมาชิก';
+        elseif ($status === 'suspended') $error = 'ไม่สามารถใช้สมาชิกนี้ได้ กรุณาติดต่อพนักงาน หรือเลือกไม่ใช่สมาชิก';
+        elseif ($mode === 'existing' && $status === 'none') $error = 'ไม่พบเบอร์นี้ในระบบสมาชิก กรุณาตรวจเบอร์ หรือเลือกสมัครสมาชิก';
+        elseif ($mode === 'register' && $status === 'member') $error = 'เบอร์นี้เป็นสมาชิกอยู่แล้ว กรุณาย้อนกลับแล้วเลือก "สมาชิกเดิม"';
+        if ($error) {
+            if ($mode === 'existing') {
+                $tries[] = time();
+                $_SESSION['kiosk_member_fail'] = array_values($tries);
+            }
+            out(['ok' => false, 'error' => $error], 422);
+        }
+        $_SESSION['kiosk_member_fail'] = [];
+        out(['ok' => true]);
+    }
     if ($action === 'place' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($_SESSION['kiosk_mode'])) {
             out(['ok' => false, 'error' => 'กรุณาเปิดหน้าตู้สั่งอาหารใหม่อีกครั้ง'], 403);

@@ -73,22 +73,63 @@ require_once __DIR__ . '/../../includes/header.php';
     <?php endforeach; ?>
 </div>
 
-<!-- 2. พร้อมรับ -->
+<!-- 2. พร้อมรับ: กรอกรหัสบัตรที่ลูกค้ายื่นคืน แล้วตรวจรายการก่อนส่งมอบ -->
 <h2 class="h5 mb-2"><i class="ti ti-bell-ringing text-success"></i> อาหารพร้อม รอลูกค้ามารับ <span class="badge text-bg-success"><?= count($pickup) ?></span></h2>
-<p class="text-muted small mb-3">เรียกคิว/เลขบัตรแล้วกดส่งมอบ (รับบัตรคืนจากลูกค้า) · <a href="../../kiosk/board.php" target="_blank">เปิดจอคิวลูกค้า</a></p>
+<p class="text-muted small mb-2">รับบัตรคืนจากลูกค้า กรอกรหัส 4 หลักบนบัตร แล้วตรวจรายการก่อนกดส่งมอบ · <a href="../../kiosk/board.php" target="_blank">เปิดจอคิวลูกค้า</a></p>
+<form id="card-lookup" class="d-flex gap-2 mb-1" style="max-width:420px" autocomplete="off">
+    <input id="card-lookup-code" class="form-control form-control-lg mono" inputmode="numeric" maxlength="4" placeholder="รหัสบัตร 4 หลัก" aria-label="รหัสบัตร 4 หลัก">
+    <button class="btn btn-success btn-lg text-nowrap"><i class="ti ti-search"></i> ตรวจบัตร</button>
+</form>
+<div id="card-lookup-error" class="text-danger small fw-bold mb-2" role="alert"></div>
 <div class="d-flex flex-wrap gap-2 mb-4">
     <?php if (!$pickup): ?><div class="text-muted small">ยังไม่มีคิวที่พร้อมรับ</div><?php endif; ?>
-    <?php foreach ($pickup as $o): $service=ServiceFlow::details((int)$o['order_id']); ?>
-    <form method="post" action="kiosk_action.php" class="card border-success">
+    <?php foreach ($pickup as $o): ?>
+    <div class="card border-success">
         <div class="card-body py-2 px-3 d-flex align-items-center gap-3">
             <div class="queue-number" style="background:#2f8f5b"><?= !empty($o['queue_no']) ? KioskOrder::queueLabel((int) $o['queue_no'], $o['channel'], (int)$o['order_id']) : '#' . $o['order_id'] ?></div>
             <?= KioskOrder::cardBadge($o, 'fs-6') ?>
-            <?= Security::csrfInput() ?>
-            <input type="hidden" name="order_id" value="<?= $o['order_id'] ?>">
-            <button name="do" value="handover" class="btn btn-success"><i class="ti ti-hand-finger"></i> ส่งมอบแล้ว</button>
+            <button type="button" class="btn btn-success js-handover" data-order="<?= (int) $o['order_id'] ?>"><i class="ti ti-list-check"></i> ตรวจและส่งมอบ</button>
         </div>
-    </form>
+    </div>
     <?php endforeach; ?>
+</div>
+
+<div class="modal fade" id="handover-modal" tabindex="-1" aria-labelledby="handover-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <form method="post" action="kiosk_action.php" id="handover-form" autocomplete="off">
+        <?= Security::csrfInput() ?>
+        <input type="hidden" name="order_id" id="ho-order" value="">
+        <input type="hidden" name="do" value="handover">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="handover-title">ตรวจรายการก่อนส่งมอบ</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="queue-number" id="ho-queue" style="background:#2f8f5b"></div>
+            <div><div id="ho-meta" class="small text-muted"></div><div id="ho-member" class="fw-bold"></div></div>
+          </div>
+          <table class="table align-middle mb-3">
+            <thead class="table-light"><tr><th>รายการ</th><th class="text-end" style="width:90px">จำนวน</th></tr></thead>
+            <tbody id="ho-items"></tbody>
+            <tfoot><tr><th>ยอดที่ชำระ</th><th class="text-end" id="ho-total"></th></tr></tfoot>
+          </table>
+          <div id="ho-code-wrap" class="mb-2">
+            <label for="ho-code" class="form-label fw-bold">รหัส 4 หลักบนบัตรที่ลูกค้ายื่นคืน</label>
+            <input id="ho-code" name="card_code" class="form-control form-control-lg mono" inputmode="numeric" maxlength="4">
+            <div id="ho-code-error" class="text-danger small fw-bold mt-1" role="alert"></div>
+          </div>
+          <div id="ho-verified" class="alert alert-success py-2 small mb-2" hidden><i class="ti ti-circle-check"></i> รหัสบัตรตรงกับออเดอร์นี้</div>
+          <div id="ho-notready" class="alert alert-warning py-2 small mb-0" hidden></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-success btn-lg" id="ho-submit"><i class="ti ti-hand-finger"></i> ยืนยัน ลูกค้ารับแล้ว</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <?php if ($orders): ?>
@@ -137,7 +178,91 @@ require_once __DIR__ . '/../../includes/header.php';
     }
     check();
     setInterval(check, 3000);
-    setTimeout(function reload() { if (busy) setTimeout(reload, 3000); else location.reload(); }, 20000);
+    setTimeout(function reload() {
+        var typing = document.getElementById('card-lookup-code').value !== '';
+        if (busy || window.handoverOpen || typing) setTimeout(reload, 3000); else location.reload();
+    }, 20000);
+})();
+
+// ส่งมอบ: เปิดรายการจากรหัสบัตร หรือจากปุ่มของแต่ละคิว แล้วให้แคชเชียร์ตรวจด้วยตาก่อนยืนยัน
+(function () {
+    var modalEl = document.getElementById('handover-modal');
+    var $ = function (id) { return document.getElementById(id); };
+    var needCode = false;
+    modalEl.addEventListener('shown.bs.modal', function () {
+        window.handoverOpen = true;
+        if (needCode) $('ho-code').focus(); else $('ho-submit').focus();
+    });
+    modalEl.addEventListener('hidden.bs.modal', function () { window.handoverOpen = false; });
+
+    function row(item) {
+        var tr = document.createElement('tr'), td = document.createElement('td'), q = document.createElement('td');
+        var name = document.createElement('div');
+        name.className = 'fw-bold';
+        name.textContent = item.name;
+        td.appendChild(name);
+        if (item.addons.length) {
+            var a = document.createElement('div');
+            a.className = 'small text-muted';
+            a.textContent = '+ ' + item.addons.join(' · ');
+            td.appendChild(a);
+        }
+        if (item.note) {
+            var n = document.createElement('div');
+            n.className = 'small text-danger fw-bold';
+            n.textContent = 'หมายเหตุ: ' + item.note;
+            td.appendChild(n);
+        }
+        q.className = 'text-end fs-5 fw-bold';
+        q.textContent = '× ' + item.qty;
+        tr.appendChild(td); tr.appendChild(q);
+        return tr;
+    }
+
+    function open(query, code) {
+        $('card-lookup-error').textContent = '';
+        return fetch('handover.php?' + query, { cache: 'no-store' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (!d.ok) { $('card-lookup-error').textContent = d.error || 'ไม่พบออเดอร์'; return; }
+                $('ho-order').value = d.order_id;
+                $('ho-queue').textContent = d.queue_label;
+                $('ho-meta').textContent = [d.card_label, d.channel, d.service].filter(Boolean).join(' · ');
+                $('ho-member').textContent = d.member ? 'สมาชิก: ' + d.member : '';
+                var body = $('ho-items');
+                body.innerHTML = '';
+                d.items.forEach(function (it) { body.appendChild(row(it)); });
+                $('ho-total').textContent = '฿' + Number(d.total).toLocaleString('th-TH', { minimumFractionDigits: 2 });
+                needCode = d.needs_code;
+                $('ho-code').value = d.verified ? code : '';
+                $('ho-code-error').textContent = '';
+                $('ho-code-wrap').hidden = !d.needs_code;
+                $('ho-verified').hidden = !d.verified;
+                $('ho-notready').hidden = d.ready;
+                $('ho-notready').textContent = d.ready ? '' : 'ยังส่งมอบไม่ได้ สถานะตอนนี้: ' + d.status_label;
+                $('ho-submit').disabled = !d.ready;
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            })
+            .catch(function () { $('card-lookup-error').textContent = 'เชื่อมต่อไม่ได้ กรุณาลองใหม่'; });
+    }
+
+    $('card-lookup').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var code = $('card-lookup-code').value.trim();
+        if (!/^\d{4}$/.test(code)) { $('card-lookup-error').textContent = 'กรุณากรอกรหัสบัตร 4 หลัก'; return; }
+        open('card=' + code, code).then(function () { $('card-lookup-code').value = ''; });
+    });
+    document.querySelectorAll('.js-handover').forEach(function (b) {
+        b.addEventListener('click', function () { open('order_id=' + b.dataset.order, ''); });
+    });
+    $('ho-code').addEventListener('input', function () { $('ho-code-error').textContent = ''; });
+    $('handover-form').addEventListener('submit', function (e) {
+        if (needCode && !/^\d{4}$/.test($('ho-code').value.trim())) {
+            e.preventDefault();
+            $('ho-code-error').textContent = 'กรุณากรอกรหัส 4 หลักบนบัตร';
+            $('ho-code').focus();
+        }
+    });
 })();
 </script>
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

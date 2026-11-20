@@ -50,6 +50,27 @@ class QueueCard
         return $card;
     }
 
+    // ตอนส่งมอบ: หาออเดอร์ที่ยังเปิดอยู่จากรหัสบนบัตรที่ลูกค้ายื่นคืน
+    public static function openOrderByCode(string $code): ?int
+    {
+        if (!preg_match('/^\d{4}$/D', $code)) return null;
+        $stmt = getDB()->prepare('SELECT o.order_id FROM queue_cards c JOIN orders o ON o.queue_card_id = c.card_id
+                                  WHERE c.code = ? AND o.status IN ' . self::OPEN . ' ORDER BY o.order_id LIMIT 1');
+        $stmt->execute([$code]);
+        $id = $stmt->fetchColumn();
+        return $id ? (int) $id : null;
+    }
+
+    // รหัสที่แคชเชียร์กรอกตรงกับบัตรที่ผูกกับออเดอร์นี้ไหม
+    public static function codeMatchesOrder(int $orderId, string $code): bool
+    {
+        if (!preg_match('/^\d{4}$/D', $code)) return false;
+        $stmt = getDB()->prepare('SELECT COUNT(*) FROM orders o JOIN queue_cards c ON c.card_id = o.queue_card_id
+                                  WHERE o.order_id = ? AND c.code = ?');
+        $stmt->execute([$orderId, $code]);
+        return (int) $stmt->fetchColumn() === 1;
+    }
+
     private static function findByCode(string $code, bool $lock = false): ?array
     {
         if (!preg_match('/^\d{4}$/D', $code)) return null;

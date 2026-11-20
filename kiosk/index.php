@@ -133,11 +133,6 @@ $config = [
 
       /* ---- บัตรคิว ---- */
       #scr-card { align-items: center; justify-content: center; padding: 2rem; }
-      .card-demo { display: inline-flex; align-items: center; gap: 1rem; background: #fff; border: 3px dashed var(--c-brand-2);
-                   border-radius: 1rem; padding: .8rem 1.4rem; margin-bottom: 1rem; text-align: left; }
-      .card-demo .no { font-size: 2.4rem; font-weight: 800; color: var(--c-brand); line-height: 1; }
-      .card-demo .cd { font-size: 1.1rem; }
-      .card-demo .cd b { font-size: 1.5rem; letter-spacing: .15em; background: #fff3c4; padding: 0 .3rem; border-radius: .3rem; }
       .code-boxes { display: flex; gap: .8rem; justify-content: center; margin: .5rem 0 1.2rem; }
       .code-boxes span { width: 4.2rem; height: 5rem; border: 3px solid var(--c-line); border-radius: 1rem; background: #fff;
                          display: flex; align-items: center; justify-content: center; font-size: 2.8rem; font-weight: 800; }
@@ -203,7 +198,6 @@ $config = [
  <div class="pay-box text-center">
   <h2 class="fw-bold mb-1">หยิบบัตรคิว 1 ใบ</h2>
   <p class="text-muted mb-3">จากกล่องข้างตู้ แล้วกรอก <strong>รหัส 4 หลัก</strong> ที่อยู่บนบัตร</p>
-  <div class="card-demo" aria-hidden="true"><div class="no">07</div><div class="cd">บัตรคิว<br>รหัส <b>1234</b></div></div>
   <div class="code-boxes" id="card-boxes"><span></span><span></span><span></span><span></span></div>
   <input type="hidden" id="card-code" value="">
   <div class="keypad" id="card-keypad">
