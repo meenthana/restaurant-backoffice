@@ -14,7 +14,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $do = (string) ($_POST['do'] ?? '');
     $id = (int) ($_POST['card_id'] ?? 0);
     try {
-        if ($do === 'add') QueueCard::add((int) ($_POST['count'] ?? 1));
+        if ($do === 'add') QueueCard::add((int) ($_POST['count'] ?? 1), (string) ($_POST['card_type'] ?? 'kiosk'));
         elseif ($do === 'on' || $do === 'off') QueueCard::setActive($id, $do === 'on');
         elseif ($do === 'code') QueueCard::regenerate($id);
         elseif ($do === 'release') QueueCard::release($id);
@@ -29,7 +29,7 @@ $required = AppSetting::get('queue_card_required', '1') === '1';
 function qcEsc($v): string { return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); }
 
 require_once __DIR__.'/../../includes/header.php';
-pageHeader('บัตรคิว', 'ลูกค้าหยิบบัตรแล้วกรอกรหัส 4 หลักที่ตู้ก่อนสั่ง บัตรว่างเองเมื่อส่งมอบหรือยกเลิกออเดอร์',
+pageHeader('บัตรคิว', 'บัตรตู้: ลูกค้ากรอกรหัสที่ตู้ก่อนสั่ง · บัตรอาหารตามสั่ง: ยื่นให้พนักงานตอนสั่ง · ตอนรับอาหารแคชเชียร์กรอกรหัสบัตรเพื่อยืนยัน',
     '<a class="btn btn-outline-dark" href="index.php">กลับตั้งค่าร้าน</a> <a class="btn btn-dark" href="queue_cards_print.php" target="_blank"><i class="ti ti-printer"></i> พิมพ์บัตร</a>');
 ?>
 <?php if ($error): ?><div class="alert alert-danger" role="alert"><?= qcEsc($error) ?></div><?php endif; ?>
@@ -48,6 +48,12 @@ pageHeader('บัตรคิว', 'ลูกค้าหยิบบัตร�
       <?= Security::csrfInput() ?><input type="hidden" name="do" value="add">
       <div><label class="form-label fw-bold" for="count">เพิ่มบัตรใหม่</label>
       <input id="count" name="count" type="number" min="1" max="50" value="5" class="form-control"></div>
+      <?php if (QueueCard::typeReady()): ?>
+      <div><label class="form-label fw-bold" for="card_type">ประเภท</label>
+      <select id="card_type" name="card_type" class="form-select">
+        <?php foreach (QueueCard::TYPES as $k => $label): ?><option value="<?= qcEsc($k) ?>"><?= qcEsc($label) ?></option><?php endforeach; ?>
+      </select></div>
+      <?php endif; ?>
       <button class="btn btn-dark"><i class="ti ti-plus"></i> เพิ่ม</button>
       <span class="text-muted small">ระบบสุ่มรหัสให้ แล้วกดพิมพ์บัตร</span>
     </div></form>
@@ -56,12 +62,13 @@ pageHeader('บัตรคิว', 'ลูกค้าหยิบบัตร�
 
 <div class="card"><div class="table-responsive">
 <table class="table align-middle mb-0">
-  <thead class="table-light"><tr><th>บัตร</th><th>รหัสบนบัตร</th><th>เปิดใช้</th><th>สถานะ</th><th class="text-end">จัดการ</th></tr></thead>
+  <thead class="table-light"><tr><th>บัตร</th><th>ประเภท</th><th>รหัสบนบัตร</th><th>เปิดใช้</th><th>สถานะ</th><th class="text-end">จัดการ</th></tr></thead>
   <tbody>
-  <?php if (!$cards): ?><tr><td colspan="5" class="text-center text-muted py-4">ยังไม่มีบัตร</td></tr><?php endif; ?>
+  <?php if (!$cards): ?><tr><td colspan="6" class="text-center text-muted py-4">ยังไม่มีบัตร</td></tr><?php endif; ?>
   <?php foreach ($cards as $c): ?>
     <tr class="<?= $c['is_active'] ? '' : 'table-secondary' ?>">
       <td class="fw-bold fs-5"><?= qcEsc(QueueCard::label((int) $c['card_no'])) ?></td>
+      <td><span class="badge <?= ($c['card_type'] ?? 'kiosk') === 'counter' ? 'text-bg-warning' : 'text-bg-light border' ?>"><?= qcEsc(QueueCard::typeLabel($c['card_type'] ?? null)) ?></span></td>
       <td class="mono fs-5"><?= qcEsc($c['code']) ?></td>
       <td><?= statusToggle('queue_cards.php', ['do' => $c['is_active'] ? 'off' : 'on', 'card_id' => (int) $c['card_id']], (bool) $c['is_active'], 'เปิดใช้', 'ปิดใช้', $c['is_active'] ? 'ปิดใช้บัตรนี้? (ใช้เมื่อบัตรหายหรือชำรุด)' : '') ?></td>
       <td>

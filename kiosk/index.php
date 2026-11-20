@@ -68,6 +68,7 @@ $config = [
       #scr-welcome .logo { font-size: 5rem; color: var(--c-accent); line-height: 1; }
       #scr-welcome h1 { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 800; margin: 1rem 0 .5rem; }
       #scr-welcome p { font-size: 1.3rem; opacity: .85; margin-bottom: 2.5rem; }
+      #scr-welcome p.diy-hint { font-size: 1.05rem; margin: 2rem 0 0; }
       .svc-choices { display: grid; grid-template-columns: repeat(2, minmax(220px, 300px)); gap: 1.25rem; }
       .svc-btn { background: #fff; color: var(--c-ink); border: 0; border-radius: 1.5rem; padding: 2rem 1rem;
                  display: flex; flex-direction: column; align-items: center; gap: .75rem; font-size: 1.5rem; font-weight: 800;
@@ -191,12 +192,13 @@ $config = [
         <button class="svc-btn" data-service="dine_in"><i class="ti ti-armchair"></i>ทานที่ร้าน<small>รับอาหารที่เคาน์เตอร์เมื่อเรียกคิว</small></button>
         <button class="svc-btn" data-service="takeaway"><i class="ti ti-paper-bag"></i>สั่งกลับบ้าน<small>ใส่กล่องพร้อมถุง</small></button>
     </div>
+    <p class="diy-hint"><i class="ti ti-chef-hat"></i> อยากสั่งอาหารตามสั่งแบบเลือกเอง (เช่น กะเพรา + หมูกรอบ + หมึก) สั่งกับพนักงานที่เคาน์เตอร์</p>
 </section>
 
 <!-- ============ 1b. กรอกรหัสบัตรคิว ============ -->
 <section id="scr-card" class="screen">
  <div class="pay-box text-center">
-  <h2 class="fw-bold mb-1">หยิบบัตรคิว 1 ใบ</h2>
+  <h2 class="fw-bold mb-1">หยิบบัตรตู้สั่งอาหาร 1 ใบ</h2>
   <p class="text-muted mb-3">จากกล่องข้างตู้ แล้วกรอก <strong>รหัส 4 หลัก</strong> ที่อยู่บนบัตร</p>
   <div class="code-boxes" id="card-boxes"><span></span><span></span><span></span><span></span></div>
   <input type="hidden" id="card-code" value="">
@@ -211,7 +213,7 @@ $config = [
    <button type="button" id="btn-card-back" class="btn-touch btn-ghost"><i class="ti ti-arrow-left"></i> ย้อนกลับ</button>
    <button type="button" id="btn-card-next" class="btn-touch btn-brand" disabled>ยืนยันบัตร</button>
   </div>
-  <p class="small text-muted mt-3">เก็บบัตรไว้กับตัว พนักงานจะเรียกตามเลขบัตรเมื่ออาหารพร้อม แล้วคืนบัตรตอนรับอาหาร</p>
+  <p class="small text-muted mt-3">เก็บบัตรไว้กับตัว ตอนรับอาหารยื่นบัตรให้พนักงานตรวจรหัส แล้วพนักงานจะรับบัตรคืน</p>
  </div>
 </section>
 

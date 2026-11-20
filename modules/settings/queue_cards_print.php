@@ -28,18 +28,24 @@ body { font-family: Sarabun, Tahoma, sans-serif; margin: 0; background: #eee; co
 .qc .code-l { font-size: 8.5pt; color: #555; margin-top: 1mm; }
 .qc .code { font-size: 26pt; font-weight: 800; letter-spacing: .18em; background: #fff3c4; border-radius: 2mm; text-align: center; }
 .qc .how { font-size: 7.5pt; line-height: 1.35; color: #333; }
+.qc.counter { border-color: #9a3412; }
+.qc.counter .no { background: #9a3412; }
 @media print { body { background: #fff; } .bar { display: none; } .sheet { padding: 0; } }
 </style></head>
 <body>
 <div class="bar"><button onclick="print()">พิมพ์</button> <span><?= count($cards) ?> ใบ · กระดาษ A4 หน้าละ 10 ใบ · แนะนำพิมพ์บนกระดาษการ์ดแล้วเคลือบ</span></div>
 <div class="sheet">
-<?php foreach ($cards as $c): ?>
-  <div class="qc">
-    <div class="no"><small>บัตรคิว</small><b><?= e(str_pad((string) $c['card_no'], 2, '0', STR_PAD_LEFT)) ?></b></div>
+<?php foreach ($cards as $c): $counter = ($c['card_type'] ?? 'kiosk') === 'counter'; ?>
+  <div class="qc<?= $counter ? ' counter' : '' ?>">
+    <div class="no"><small><?= $counter ? 'ตามสั่ง' : 'บัตรตู้' ?></small><b><?= e(str_pad((string) $c['card_no'], 2, '0', STR_PAD_LEFT)) ?></b></div>
     <div class="info">
       <div class="shop"><?= e($shop) ?></div>
-      <div><div class="code-l">รหัสสำหรับกรอกที่ตู้</div><div class="code"><?= e($c['code']) ?></div></div>
-      <div class="how">1. กรอกรหัสนี้ที่ตู้ก่อนสั่ง<br>2. แสดงบัตรเมื่อรับอาหาร<br>3. คืนบัตรที่เคาน์เตอร์</div>
+      <div><div class="code-l"><?= $counter ? 'รหัสบัตร' : 'รหัสสำหรับกรอกที่ตู้' ?></div><div class="code"><?= e($c['code']) ?></div></div>
+      <?php if ($counter): ?>
+      <div class="how">1. ยื่นบัตรนี้ให้พนักงานตอนสั่ง<br>2. ยื่นบัตรอีกครั้งเมื่อรับอาหาร<br>3. พนักงานรับบัตรคืน</div>
+      <?php else: ?>
+      <div class="how">1. กรอกรหัสนี้ที่ตู้ก่อนสั่ง<br>2. ยื่นบัตรเมื่อรับอาหาร<br>3. พนักงานรับบัตรคืน</div>
+      <?php endif; ?>
     </div>
   </div>
 <?php endforeach; ?>
