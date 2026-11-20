@@ -16,7 +16,7 @@ $_SESSION['kiosk_mode'] = true;   // ให้ API สั่งด้วยเ�
 $shopName = AppSetting::get('store_name', 'ครัวธนุรเวท');
 $avail = MenuStock::availabilityMap();
 $menu = [];
-foreach (Menu::all() as $m) {
+foreach (Menu::forCustomers() as $m) {
     $a = $avail[(int) $m['menu_id']];
     $menu[] = [
         'id'       => (int) $m['menu_id'],

@@ -4,10 +4,14 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../classes/Menu.php';
 require_once __DIR__ . '/../../classes/Recipe.php';
 require_once __DIR__ . '/../../classes/Addon.php';
+require_once __DIR__ . '/../../classes/Auth.php';
+require_once __DIR__ . '/../../classes/Security.php';
+Auth::requireAnyRole(['owner','manager']);
 
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    Security::verifyCsrf();
     $name     = trim($_POST['name'] ?? '');
     $category = trim($_POST['category'] ?? '');
     $price    = (float) ($_POST['price'] ?? 0);
@@ -55,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         $menuId = Menu::create($name, $category, $price, $imagePath);
+        Menu::setDiy($menuId, isset($_POST['is_diy']));
 
         Recipe::saveForMenu($menuId, $ingredientIds, $quantities);
         Addon::assignToMenu($menuId, array_map('intval', $selectedAddons));
@@ -83,6 +88,7 @@ require_once __DIR__ . '/../../includes/header.php';
 <?php endif; ?>
 
 <form method="post" action="create.php" enctype="multipart/form-data">
+<?= Security::csrfInput() ?>
     <div class="card mb-3">
         <div class="card-header bg-white fw-semibold"><i class="ti ti-tools-kitchen-2"></i> ข้อมูลเมนู</div>
         <div class="card-body">
@@ -109,6 +115,14 @@ require_once __DIR__ . '/../../includes/header.php';
                     <label class="form-label">รูปเมนู (ไม่บังคับ, JPG/PNG/WEBP ไม่เกิน 3MB)</label>
                     <input type="file" name="image" class="form-control" accept=".jpg,.jpeg,.png,.webp">
                 </div>
+                <?php if (Menu::diyReady()): ?>
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" name="is_diy" id="isDiy" <?= isset($_POST['is_diy']) ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="isDiy">เมนูฐานตามสั่ง (DIY) · แสดงเฉพาะหน้าแคชเชียร์ ลูกค้าสั่งกับพนักงานด้วยบัตรอาหารตามสั่ง</label>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

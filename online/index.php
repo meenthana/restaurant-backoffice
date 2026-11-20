@@ -15,7 +15,7 @@ if (!isset($_SESSION['member_id'])) { header('Location: login.php'); exit; }
 $member = Member::find((int) $_SESSION['member_id']);
 if (!$member) { session_destroy(); header('Location: login.php'); exit; }
 
-$menuItems   = Menu::all();
+$menuItems   = Menu::forCustomers();
 $avail       = MenuStock::availabilityMap();
 $leadMinutes = max(0, (int) AppSetting::get('pickup_lead_minutes', '30'));
 $closeTime   = AppSetting::get('store_close_time', '20:00');

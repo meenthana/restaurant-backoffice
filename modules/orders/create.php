@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../classes/TableSession.php';
 $tableSessionId = (int) ($_GET['table_session_id'] ?? 0);
 $tableSession = $tableSessionId > 0 ? TableSession::find($tableSessionId) : null;
 
-$menuItems = Menu::all();
+$menuItems = Menu::forCustomers();
 
 // ดึง Add-on ที่เปิดใช้ของแต่ละเมนู เตรียมไว้ล่วงหน้า (กัน query วนซ้ำเยอะ)
 $addonsByMenu = [];

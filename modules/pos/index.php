@@ -31,7 +31,7 @@ require_once __DIR__ . '/../../includes/header.php';
 ?>
 
 <?php pageHeader('คิดเงิน', 'รับเงินและส่งมอบอาหารตามคิว',
-    '<a href="/restaurant-backoffice/kiosk/index.php" target="_blank" class="btn btn-outline-dark"><i class="ti ti-device-tablet"></i> เปิดหน้าตู้สั่งอาหาร</a>'); ?>
+    '<a href="diy.php" class="btn btn-dark"><i class="ti ti-chef-hat"></i> สั่งอาหารตามสั่ง (DIY)</a> <a href="/restaurant-backoffice/kiosk/index.php" target="_blank" class="btn btn-outline-dark"><i class="ti ti-device-tablet"></i> เปิดหน้าตู้สั่งอาหาร</a>'); ?>
 
 <?php if (!empty($_GET['msg'])): ?><div class="alert alert-success"><?= htmlspecialchars($_GET['msg']) ?></div><?php endif; ?>
 <?php if (!empty($_GET['error'])): ?><div class="alert alert-danger"><?= htmlspecialchars($_GET['error']) ?></div><?php endif; ?>

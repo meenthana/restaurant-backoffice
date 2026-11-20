@@ -4,6 +4,9 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../classes/Menu.php';
 require_once __DIR__ . '/../../classes/Recipe.php';
 require_once __DIR__ . '/../../classes/Addon.php';
+require_once __DIR__ . '/../../classes/Auth.php';
+require_once __DIR__ . '/../../classes/Security.php';
+Auth::requireAnyRole(['owner','manager']);
 
 $menuId = (int) ($_GET['menu_id'] ?? $_POST['menu_id'] ?? 0);
 $menu = Menu::find($menuId);
@@ -15,6 +18,7 @@ if (!$menu) {
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    Security::verifyCsrf();
     $name     = trim($_POST['name'] ?? '');
     $category = trim($_POST['category'] ?? '');
     $price    = (float) ($_POST['price'] ?? 0);
@@ -63,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         Menu::update($menuId, $name, $category, $price, $isActive, $imagePath);
+        Menu::setDiy($menuId, isset($_POST['is_diy']));
         Recipe::replaceForMenu($menuId, $ingredientIds, $quantities);
         Addon::assignToMenu($menuId, array_map('intval', $selectedAddons));
 
@@ -91,6 +96,7 @@ require_once __DIR__ . '/../../includes/header.php';
 <?php endif; ?>
 
 <form method="post" action="edit.php" enctype="multipart/form-data">
+<?= Security::csrfInput() ?>
     <input type="hidden" name="menu_id" value="<?= $menuId ?>">
 
     <div class="card mb-3">
@@ -122,6 +128,14 @@ require_once __DIR__ . '/../../includes/header.php';
                         <label class="form-check-label" for="isActive">ใช้งานอยู่</label>
                     </div>
                 </div>
+                <?php if (Menu::diyReady()): ?>
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" name="is_diy" id="isDiy" <?= !empty($menu['is_diy']) ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="isDiy">เมนูฐานตามสั่ง (DIY) · แสดงเฉพาะหน้าแคชเชียร์ ลูกค้าสั่งกับพนักงานด้วยบัตรอาหารตามสั่ง</label>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <div class="col-md-6">
                     <label class="form-label">รูปเมนู (อัปโหลดใหม่ถ้าต้องการเปลี่ยน)</label>
                     <input type="file" name="image" class="form-control" accept=".jpg,.jpeg,.png,.webp">

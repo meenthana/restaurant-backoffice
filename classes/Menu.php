@@ -20,6 +20,39 @@ class Menu
         return $rows;
     }
 
+    // เมนูสำหรับลูกค้า (ตู้ ออนไลน์ หน้าพนักงานรับออเดอร์): ไม่รวมเมนูฐานตามสั่ง (DIY)
+    public static function forCustomers(): array
+    {
+        return array_values(array_filter(self::all(), fn($m) => !self::isDiy($m)));
+    }
+
+    // เมนูฐานตามสั่ง (DIY) สำหรับหน้าแคชเชียร์
+    public static function diyBases(): array
+    {
+        return array_values(array_filter(self::all(), fn($m) => self::isDiy($m)));
+    }
+
+    public static function isDiy(array $menu): bool
+    {
+        return !empty($menu['is_diy']);
+    }
+
+    public static function diyReady(): bool
+    {
+        static $ok = null;
+        if ($ok === null) {
+            try { getDB()->query('SELECT is_diy FROM menu LIMIT 1'); $ok = true; }
+            catch (Throwable $e) { $ok = false; }
+        }
+        return $ok;
+    }
+
+    public static function setDiy(int $menuId, bool $diy): void
+    {
+        if (!self::diyReady()) return;
+        getDB()->prepare('UPDATE menu SET is_diy = ? WHERE menu_id = ?')->execute([$diy ? 1 : 0, $menuId]);
+    }
+
     // ---------- หมวดหมู่เมนู (เก็บรายชื่อและลำดับไว้ในตั้งค่าร้าน) ----------
     public static function categories(): array
     {

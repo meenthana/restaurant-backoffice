@@ -11,6 +11,7 @@ require_once __DIR__ . '/AppSetting.php';
 require_once __DIR__ . '/ServiceFlow.php';
 require_once __DIR__ . '/PhoneMember.php';
 require_once __DIR__ . '/ItemNote.php';
+require_once __DIR__ . '/AddonGroup.php';
 require_once __DIR__ . '/AuditLog.php';
 require_once __DIR__ . '/QueueCard.php';
 
@@ -27,7 +28,8 @@ class KioskOrder
         if (!in_array($serviceType, ['dine_in', 'takeaway'], true)) {
             throw new Exception('กรุณาเลือกทานที่ร้านหรือรับกลับบ้าน');
         }
-        $lines = self::validateCart($cart);
+        // ออเดอร์หน้าร้าน (แคชเชียร์) สั่งเมนูตามสั่ง (DIY) ได้ · ตู้และออนไลน์สั่งได้เฉพาะเมนูจานเดียว
+        $lines = self::validateCart($cart, $channel === 'walkin');
 
         $db = getDB();
         $own = !$db->inTransaction();
@@ -42,6 +44,8 @@ class KioskOrder
             $card = null;
             if ($channel === 'kiosk' && QueueCard::required()) {
                 $card = QueueCard::attach($orderId, (string) ($service['card_code'] ?? ''));
+            } elseif ($channel === 'walkin' && QueueCard::typeReady() && QueueCard::required('counter')) {
+                $card = QueueCard::attach($orderId, (string) ($service['card_code'] ?? ''), 'counter');
             }
 
             foreach ($lines as $line) {
@@ -76,7 +80,7 @@ class KioskOrder
     }
 
     // ตรวจตะกร้าฝั่งเซิร์ฟเวอร์ทุกครั้ง เพราะแท็บเล็ตเป็นเครื่องสาธารณะ
-    public static function validateCart(array $cart): array
+    public static function validateCart(array $cart, bool $allowDiy = false): array
     {
         if (!$cart) throw new Exception('ตะกร้าว่าง กรุณาเลือกเมนูอย่างน้อย 1 รายการ');
         if (count($cart) > self::MAX_LINES) throw new Exception('รายการในตะกร้ามากเกินไป');
@@ -96,6 +100,9 @@ class KioskOrder
             if ($reason = Menu::unavailableReason($menu)) {
                 throw new Exception('ขออภัย "' . $menu['name'] . '" ' . $reason);
             }
+            if (Menu::isDiy($menu) && !$allowDiy) {
+                throw new Exception('"' . $menu['name'] . '" เป็นเมนูตามสั่ง กรุณาสั่งกับพนักงานที่เคาน์เตอร์');
+            }
             $allowed = array_map('intval', array_column(Addon::forMenu($menuId), 'addon_id'));
             $addons  = array_values(array_unique(array_map('intval', (array) ($row['addons'] ?? []))));
             foreach ($addons as $a) {
@@ -103,6 +110,7 @@ class KioskOrder
                     throw new Exception('ตัวเลือกเสริมไม่ตรงกับเมนู "' . $menu['name'] . '"');
                 }
             }
+            AddonGroup::validate($menuId, $addons, Menu::isDiy($menu), $menu['name']);
             $lines[] = ['menu_id' => $menuId, 'qty' => $qty, 'addons' => $addons, 'note' => ItemNote::clean($row['note'] ?? '')];
             $names[$menuId] = $menu['name'];
         }

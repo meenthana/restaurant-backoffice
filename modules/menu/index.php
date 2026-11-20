@@ -75,6 +75,7 @@ $menuItems = Menu::all(false);
                         <?php endif; ?>
                     </td>
                     <td><?= htmlspecialchars($m['name']) ?>
+                        <?php if (!empty($m['is_diy'])): ?><span class="badge text-bg-warning">ตามสั่ง (DIY) · แคชเชียร์</span><?php endif; ?>
                         <?php if ($max === 0): ?><div><span class="badge text-bg-danger">วัตถุดิบหลักไม่พอ ปิดขายอัตโนมัติ</span></div>
                         <?php elseif ($max !== null && $max <= 5): ?><div><span class="badge text-bg-warning">ทำได้อีก <?= $max ?> จาน</span></div><?php endif; ?></td>
                     <td><?= htmlspecialchars($m['category']) ?></td>

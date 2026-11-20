@@ -480,7 +480,10 @@ class VoiceOrderParser
     private static function menuIndex(): array
     {
         $db = getDB();
-        $rows = $db->query('SELECT menu_id, name, category, price FROM menu WHERE is_active = 1')->fetchAll();
+        // เมนูตามสั่ง (DIY) สั่งกับพนักงานเท่านั้น ไม่รับจากเสียงที่ตู้
+        require_once __DIR__ . '/Menu.php';
+        $rows = $db->query('SELECT menu_id, name, category, price' . (Menu::diyReady() ? ', is_diy' : '') . ' FROM menu WHERE is_active = 1')->fetchAll();
+        $rows = array_values(array_filter($rows, fn($r) => empty($r['is_diy'])));
 
         $aliases = [];
         try {
@@ -522,9 +525,13 @@ class VoiceOrderParser
         foreach ($db->query('SELECT menu_id, addon_id FROM menu_addons')->fetchAll() as $ma) {
             $map[(int) $ma['addon_id']][] = (int) $ma['menu_id'];
         }
+        // ตัวเลือกที่ผูกไว้เฉพาะเมนูตามสั่ง (เช่น หมูสับ ไก่) ไม่ใช้ตีความเสียงที่ตู้
+        $orderable = array_map(fn($m) => (int) $m['row']['menu_id'], self::menuIndex());
         $out = [];
         foreach ($rows as $r) {
-            $out[] = ['row' => $r, 'menu_ids' => $map[(int) $r['addon_id']] ?? []];
+            $ids = $map[(int) $r['addon_id']] ?? [];
+            if ($ids && !array_intersect($ids, $orderable)) continue;
+            $out[] = ['row' => $r, 'menu_ids' => $ids];
         }
         // เรียงชื่อยาวก่อน เพื่อให้ "ไข่เจียว" ถูกจับก่อน "ไข่"
         usort($out, fn($x, $y) => mb_strlen($y['row']['name']) <=> mb_strlen($x['row']['name']));

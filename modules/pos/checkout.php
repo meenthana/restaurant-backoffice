@@ -127,6 +127,9 @@ require_once __DIR__ . '/../../includes/header.php';
                     <span>฿<?= number_format((float)$a['addon_price'] * (int)$i['quantity'], 2) ?></span>
                 </div>
             <?php endforeach; ?>
+            <?php if (!empty($i['item_note'])): ?>
+                <div class="small text-danger fw-bold ps-4">หมายเหตุ: <?= htmlspecialchars($i['item_note']) ?></div>
+            <?php endif; ?>
             <?php endforeach; ?>
             <div class="d-flex justify-content-between fw-bold fs-4 pt-3 mt-2 border-top border-dark">
                 <span>ยอดที่ต้องชำระ</span><span id="totalDisplay">฿<?= number_format($total, 2) ?></span>

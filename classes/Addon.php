@@ -76,6 +76,15 @@ class Addon
         }
     }
 
+    // กลุ่มและลำดับของตัวเลือก (ต้องรันไมเกรชัน v3.0 ก่อน)
+    public static function setGroup(int $addonId, ?int $groupId, int $sortOrder = 0): void
+    {
+        require_once __DIR__ . '/AddonGroup.php';
+        if (!AddonGroup::ready()) return;
+        getDB()->prepare('UPDATE addons SET group_id = ?, sort_order = ? WHERE addon_id = ?')
+               ->execute([$groupId ?: null, $sortOrder, $addonId]);
+    }
+
     public static function find(int $addonId): ?array
     {
         $db = getDB();
