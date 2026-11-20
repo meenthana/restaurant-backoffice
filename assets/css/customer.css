@@ -288,3 +288,6 @@
   .on-item .m-name { font-size: 1rem; }
 }
 @media (prefers-reduced-motion: reduce) { .on-cart, .on-backdrop { transition: none; } }
+
+/* หมายเหตุต่อจาน */
+.cart-line .ad.note { color: #b42318; font-weight: 600; }

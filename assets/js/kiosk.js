@@ -52,7 +52,7 @@
     var state = {
         service: 'dine_in',
         category: null,
-        cart: [],          // [{key, menuId, qty, addons:[addonId]}]
+        cart: [],          // [{key, menuId, qty, addons:[addonId], note}]
         order: null,       // ผลตอบกลับจากเซิร์ฟเวอร์หลังสั่ง
         card: null,        // {code, label} บัตรคิวที่กรอกแล้ว
         placing: false
@@ -304,8 +304,24 @@
             $('item-addons-wrap').style.display = 'none';
             $('item-addons').innerHTML = '';
         }
+        renderNoteChips($('item-note-chips'), []);
+        $('item-note').value = '';
         updateItemSum();
         openSheet('sheet-item');
+    }
+
+    // ---------- หมายเหตุต่อจาน: ปุ่มลัดจากหลังบ้าน + พิมพ์เพิ่มเอง ----------
+    function renderNoteChips(box, picked) {
+        box.innerHTML = (CFG.noteKeywords || []).map(function (w) {
+            var on = picked.indexOf(w) !== -1;
+            return '<label class="addon-chip"><input type="checkbox" value="' + esc(w) + '"' + (on ? ' checked' : '') + '>' + esc(w) + '</label>';
+        }).join('');
+    }
+    function composeNote(box, input) {
+        var parts = Array.prototype.map.call(box.querySelectorAll('input:checked'), function (i) { return i.value; });
+        var extra = input.value.trim();
+        if (extra) parts.push(extra);
+        return parts.join(', ').slice(0, 120);
     }
 
     function selectedAddons() {
@@ -329,13 +345,13 @@
     $('item-dec').addEventListener('click', function () { if (editing && editing.qty > 1) { editing.qty--; updateItemSum(); } });
     $('item-add').addEventListener('click', function () {
         if (!editing) return;
-        addToCart(editing.menuId, editing.qty, selectedAddons());
+        addToCart(editing.menuId, editing.qty, selectedAddons(), composeNote($('item-note-chips'), $('item-note')));
         $('sheet-item').classList.remove('open');
         editing = null;
     });
 
     // ================================================================
-    function lineKey(menuId, addons) { return menuId + ':' + addons.slice().sort(function (a, b) { return a - b; }).join(','); }
+    function lineKey(menuId, addons, note) { return menuId + ':' + addons.slice().sort(function (a, b) { return a - b; }).join(',') + ':' + (note || ''); }
 
     function unitPrice(menuId, addons) {
         var m = byId[menuId];
@@ -349,7 +365,8 @@
     }
     function lineTotal(menuId, qty, addons) { return unitPrice(menuId, addons) * qty; }
 
-    function addToCart(menuId, qty, addons) {
+    function addToCart(menuId, qty, addons, note) {
+        note = (note || '').trim().slice(0, 120);
         var m = byId[menuId];
         if (!m || m.soldOut) return;
         // เก็บเฉพาะ Add-on ที่เมนูนี้เปิดให้เลือกจริง (กันผลจากการสั่งด้วยเสียงหลุดมา)
@@ -359,10 +376,10 @@
         if (room < 1) { toast('"' + m.name + '" ' + (m.maxQty === 0 ? 'หมดชั่วคราว' : 'ใส่ตะกร้าครบจำนวนที่ทำได้แล้ว')); return; }
         if (qty > room) { toast('"' + m.name + '" เหลือทำได้อีก ' + room + ' จาน ใส่ให้ ' + room + ' จาน'); qty = room; }
 
-        var key = lineKey(menuId, addons);
+        var key = lineKey(menuId, addons, note);
         var line = state.cart.filter(function (l) { return l.key === key; })[0];
         if (line) line.qty = Math.min(20, line.qty + qty);
-        else state.cart.push({ key: key, menuId: menuId, qty: Math.min(20, qty), addons: addons });
+        else state.cart.push({ key: key, menuId: menuId, qty: Math.min(20, qty), addons: addons, note: note });
         renderCart();
         renderMenu();
     }
@@ -398,10 +415,11 @@
             }).filter(Boolean);
             return '<div class="cart-line"><div class="nm">' + esc(m.name) + '</div>' +
                 (names.length ? '<div class="ad">+ ' + esc(names.join(', ')) + '</div>' : '') +
+                (l.note ? '<div class="ad note"><i class="ti ti-message-2"></i> ' + esc(l.note) + '</div>' : '') +
                 '<div class="row2"><div class="stepper stepper-sm">' +
-                '<button type="button" data-line="' + l.key + '" data-d="-1">' + (l.qty === 1 ? '<i class="ti ti-trash"></i>' : '−') + '</button>' +
+                '<button type="button" data-line="' + esc(l.key) + '" data-d="-1">' + (l.qty === 1 ? '<i class="ti ti-trash"></i>' : '−') + '</button>' +
                 '<output>' + l.qty + '</output>' +
-                '<button type="button" data-line="' + l.key + '" data-d="1">+</button></div>' +
+                '<button type="button" data-line="' + esc(l.key) + '" data-d="1">+</button></div>' +
                 '<div class="fw-bold">' + baht(lineTotal(l.menuId, l.qty, l.addons)) + '</div></div></div>';
         }).join('');
     }
@@ -466,7 +484,7 @@
         fetch(CFG.apiUrl + '?action=check', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cart: state.cart.map(function (l) { return { menu_id: l.menuId, qty: l.qty, addons: l.addons }; }) })
+            body: JSON.stringify({ cart: state.cart.map(function (l) { return { menu_id: l.menuId, qty: l.qty, addons: l.addons, note: l.note || '' }; }) })
         })
         .then(function (r) { return r.json(); })
         .then(function (d) {
@@ -517,7 +535,7 @@
                 use_points: $('use-points').checked,
                 receipt: $('receipt-preference').value,
                 card_code: state.card ? state.card.code : '',
-                cart: state.cart.map(function (l) { return { menu_id: l.menuId, qty: l.qty, addons: l.addons }; })
+                cart: state.cart.map(function (l) { return { menu_id: l.menuId, qty: l.qty, addons: l.addons, note: l.note || '' }; })
             })
         })
         .then(function (r) { return r.json(); })

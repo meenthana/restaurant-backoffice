@@ -8,6 +8,7 @@ require_once __DIR__ . '/../classes/MenuStock.php';
 require_once __DIR__ . '/../classes/ServiceFlow.php';
 require_once __DIR__ . '/../classes/PaymentGateway.php';
 require_once __DIR__ . '/../classes/QueueCard.php';
+require_once __DIR__ . '/../classes/ItemNote.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 $_SESSION['kiosk_mode'] = true;   // ให้ API สั่งด้วยเสียงรู้ว่าเรียกมาจากตู้
@@ -44,6 +45,7 @@ $config = [
     'cardRequired'  => QueueCard::required(),
     'apiUrl'        => 'api.php',
     'voiceApiUrl'   => '../api/parse_voice_order.php',
+    'noteKeywords'  => ItemNote::keywords(),
 ];
 ?>
 <!DOCTYPE html>
@@ -385,6 +387,11 @@ $config = [
         <div id="item-addons-wrap" class="mb-3">
             <div class="fw-bold mb-2">ตัวเลือกเสริม</div>
             <div class="addon-chips" id="item-addons"></div>
+        </div>
+        <div class="mb-3">
+            <div class="fw-bold mb-2">หมายเหตุถึงครัว <span class="text-muted fw-normal small">(ไม่บังคับ)</span></div>
+            <div class="addon-chips note-chips" id="item-note-chips"></div>
+            <input id="item-note" class="form-control form-control-lg mt-2" maxlength="120" autocomplete="off" placeholder="พิมพ์เพิ่มเองได้ เช่น ไม่ใส่หอม">
         </div>
         <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
             <div class="stepper"><button type="button" id="item-dec">−</button><output id="item-qty">1</output><button type="button" id="item-inc">+</button></div>

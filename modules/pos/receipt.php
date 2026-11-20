@@ -78,6 +78,7 @@ require_once __DIR__ . '/../../includes/header.php';
             <?php foreach ($addonsByItem[$i['order_item_id']] as $a): ?>
                 <div class="d-flex justify-content-between text-muted"><span>+ <?= htmlspecialchars($a['addon_name']) ?> x<?= $i['quantity'] ?></span><span><?= number_format((float)$a['addon_price'] * (int)$i['quantity'], 2) ?></span></div>
             <?php endforeach; ?>
+            <?php if (!empty($i['item_note'])): ?><div class="text-muted small">หมายเหตุ: <?= htmlspecialchars($i['item_note']) ?></div><?php endif; ?>
         <?php endforeach; ?>
         <hr>
         <div class="d-flex justify-content-between"><span>รวมรายการ</span><span><?= number_format($subtotal, 2) ?></span></div>

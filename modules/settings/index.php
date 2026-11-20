@@ -1,5 +1,6 @@
 <?php
 // ตั้งค่าร้าน (พร้อมเพย์ เวลารับ ตรวจสลิป ฯลฯ)
+require_once __DIR__.'/../../classes/ItemNote.php';
 require_once __DIR__ . '/../../classes/Auth.php';
 require_once __DIR__ . '/../../classes/AppSetting.php';
 require_once __DIR__ . '/../../classes/Security.php';
@@ -7,7 +8,7 @@ require_once __DIR__ . '/../../classes/AuditLog.php';
 Auth::requireAnyRole(['owner','manager']);
 if($_SERVER['REQUEST_METHOD']==='POST'){
  Security::verifyCsrf();
- $allowed=['store_name','store_phone','store_address','pickup_lead_minutes','pickup_window_minutes','store_close_time','reservation_grace_minutes','default_dining_minutes','online_payment_mode','baht_per_point','point_redeem_cap_percent','promptpay_id','kiosk_idle_seconds','kiosk_unpaid_expire_minutes','slip_verify_mode','slip_amount_tolerance','voice_order_enabled'];
+ $allowed=['store_name','store_phone','store_address','pickup_lead_minutes','pickup_window_minutes','store_close_time','reservation_grace_minutes','default_dining_minutes','online_payment_mode','baht_per_point','point_redeem_cap_percent','promptpay_id','kiosk_idle_seconds','kiosk_unpaid_expire_minutes','slip_verify_mode','slip_amount_tolerance','voice_order_enabled','item_note_keywords'];
  $data=[];foreach($allowed as $key){$data[$key]=$_POST[$key]??'';}
  AppSetting::setMany($data,Auth::id());AuditLog::write(Auth::id(),'update','settings',null,'แก้ไขการตั้งค่าร้าน');
  header('Location:index.php?saved=1');exit;
@@ -38,5 +39,6 @@ require_once __DIR__ . '/../../includes/header.php';
 <div class="col-md-4"><label class="form-label">การตรวจสลิป</label><select name="slip_verify_mode" class="form-select"><option value="mock" <?=($s['slip_verify_mode']??'mock')==='mock'?'selected':''?>>โหมดสาธิต</option><option value="api" <?=($s['slip_verify_mode']??'')==='api'?'selected':''?>>ตรวจกับธนาคาร</option></select></div>
 <div class="col-md-4"><label class="form-label">ยอมให้ยอดโอนคลาดเคลื่อน (บาท)</label><input type="number" step="0.01" min="0" name="slip_amount_tolerance" value="<?=htmlspecialchars($s['slip_amount_tolerance']??'1.00')?>" class="form-control"></div>
 <div class="col-md-4"><label class="form-label">สั่งด้วยเสียง</label><select name="voice_order_enabled" class="form-select"><option value="1" <?=($s['voice_order_enabled']??'1')==='1'?'selected':''?>>เปิด</option><option value="0" <?=($s['voice_order_enabled']??'1')==='0'?'selected':''?>>ปิด</option></select></div>
+<div class="col-12"><label class="form-label" for="item_note_keywords">คำหมายเหตุที่ใช้บ่อย (บรรทัดละ 1 คำ)</label><textarea id="item_note_keywords" name="item_note_keywords" rows="4" class="form-control"><?=htmlspecialchars($s['item_note_keywords']??ItemNote::DEFAULT_KEYWORDS)?></textarea><div class="form-text">แสดงเป็นปุ่มลัดตอนลูกค้าเลือกเมนูที่ตู้ และเป็นคำที่ระบบสั่งด้วยเสียงรับเป็นหมายเหตุ เช่น ไม่เผ็ด ไข่ดาวไม่สุก</div></div>
 </div></div><div class="card-footer bg-white text-end"><button class="btn btn-dark"><i class="ti ti-device-floppy"></i> บันทึกการตั้งค่า</button></div></form>
 <?php require_once __DIR__ . '/../../includes/footer.php';?>

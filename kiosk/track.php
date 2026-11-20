@@ -122,7 +122,7 @@ $css = __DIR__.'/../assets/css/customer.css';
     <h2 class="rc-title"><i class="ti ti-receipt"></i> ใบเสร็จรับเงิน</h2>
     <div class="rc-muted" style="margin-bottom:8px">เลขที่ <?= h($o['order_code']) ?> · ชำระเมื่อ <?= h(date('d/m/Y H:i', strtotime((string)$o['paid_at']))) ?></div>
     <?php foreach($items as $item): if($item['voided_at']) continue; $addons = OrderItem::getAddons((int)$item['order_item_id']); $line=(float)$item['subtotal']; foreach($addons as $a) $line+=(float)$a['addon_price']*(int)$item['quantity']; ?>
-    <div class="rc-row"><div><?= h($item['menu_name']) ?> <span class="q">× <?= (int)$item['quantity'] ?></span><?php foreach($addons as $a): ?><span class="rc-addon">+ <?= h($a['addon_name']) ?></span><?php endforeach; ?></div><div><?= baht($line) ?></div></div>
+    <div class="rc-row"><div><?= h($item['menu_name']) ?> <span class="q">× <?= (int)$item['quantity'] ?></span><?php foreach($addons as $a): ?><span class="rc-addon">+ <?= h($a['addon_name']) ?></span><?php endforeach; ?><?php if(!empty($item['item_note'])): ?><span class="rc-addon">หมายเหตุ: <?= h($item['item_note']) ?></span><?php endif; ?></div><div><?= baht($line) ?></div></div>
     <?php endforeach; ?>
     <div class="rc-line"></div>
     <?php if ((float)$o['discount_amount'] > 0): ?><div class="rc-row"><span>ส่วนลด (ใช้แต้ม)</span><span>−<?= baht($o['discount_amount']) ?></span></div><?php endif; ?>
@@ -139,7 +139,7 @@ $css = __DIR__.'/../assets/css/customer.css';
 <section class="rc-card">
     <h2 class="rc-title"><i class="ti ti-list-details"></i> รายการที่สั่ง</h2>
     <?php foreach($items as $item): if ($item['voided_at']) continue; ?>
-    <div class="rc-row"><div><?= h($item['menu_name']) ?><?php foreach(OrderItem::getAddons((int)$item['order_item_id']) as $addon): ?><span class="rc-addon">+ <?= h($addon['addon_name']) ?></span><?php endforeach; ?></div><span class="q">× <?= (int)$item['quantity'] ?></span></div>
+    <div class="rc-row"><div><?= h($item['menu_name']) ?><?php foreach(OrderItem::getAddons((int)$item['order_item_id']) as $addon): ?><span class="rc-addon">+ <?= h($addon['addon_name']) ?></span><?php endforeach; ?><?php if(!empty($item['item_note'])): ?><span class="rc-addon">หมายเหตุ: <?= h($item['item_note']) ?></span><?php endif; ?></div><span class="q">× <?= (int)$item['quantity'] ?></span></div>
     <?php endforeach; ?>
     <p class="rc-muted" style="margin:10px 0 0">ใบเสร็จจะแสดงที่นี่หลังชำระเงินสำเร็จ</p>
 </section>

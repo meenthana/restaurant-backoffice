@@ -10,6 +10,7 @@ require_once __DIR__ . '/Payment.php';
 require_once __DIR__ . '/AppSetting.php';
 require_once __DIR__ . '/ServiceFlow.php';
 require_once __DIR__ . '/PhoneMember.php';
+require_once __DIR__ . '/ItemNote.php';
 require_once __DIR__ . '/AuditLog.php';
 require_once __DIR__ . '/QueueCard.php';
 
@@ -44,7 +45,7 @@ class KioskOrder
             }
 
             foreach ($lines as $line) {
-                $itemId = OrderItem::add($orderId, $line['menu_id'], $line['qty']);
+                $itemId = OrderItem::add($orderId, $line['menu_id'], $line['qty'], $line['note'] ?? null);
                 foreach ($line['addons'] as $addonId) {
                     OrderItem::addAddon($itemId, $addonId);
                 }
@@ -102,7 +103,7 @@ class KioskOrder
                     throw new Exception('ตัวเลือกเสริมไม่ตรงกับเมนู "' . $menu['name'] . '"');
                 }
             }
-            $lines[] = ['menu_id' => $menuId, 'qty' => $qty, 'addons' => $addons];
+            $lines[] = ['menu_id' => $menuId, 'qty' => $qty, 'addons' => $addons, 'note' => ItemNote::clean($row['note'] ?? '')];
             $names[$menuId] = $menu['name'];
         }
         if ($problems = MenuStock::checkCart($lines, $names)) {

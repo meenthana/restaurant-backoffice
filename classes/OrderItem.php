@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 
 class OrderItem
 {
-    public static function add(int $orderId, int $menuId, int $quantity): int
+    public static function add(int $orderId, int $menuId, int $quantity, ?string $note = null): int
     {
         $db = getDB();
 
@@ -18,14 +18,15 @@ class OrderItem
         }
 
         $stmt = $db->prepare(
-            'INSERT INTO order_items (order_id, menu_id, quantity, unit_price)
-             VALUES (:order_id, :menu_id, :quantity, :unit_price)'
+            'INSERT INTO order_items (order_id, menu_id, quantity, unit_price, item_note)
+             VALUES (:order_id, :menu_id, :quantity, :unit_price, :note)'
         );
         $stmt->execute([
             'order_id'   => $orderId,
             'menu_id'    => $menuId,
             'quantity'   => $quantity,
             'unit_price' => $unitPrice,
+            'note'       => ($note !== null && $note !== '') ? $note : null,
         ]);
 
         return (int) $db->lastInsertId();
