@@ -1,0 +1,290 @@
+/* ============================================================
+   ธีมหน้าฝั่งลูกค้า — ใช้ร่วมกันระหว่างตู้ Self-Service และหน้าสั่งออนไลน์
+   สีหลักชุดเดียวกับหลังร้าน (เขียวเข้ม / ครีม / ทองอุ่น)
+   ============================================================ */
+:root {
+  --c-ink: #1f2a24;
+  --c-muted: #6b756f;
+  --c-bg: #f4f1ea;
+  --c-surface: #ffffff;
+  --c-line: #e4dcc8;
+  --c-brand: #173b2d;
+  --c-brand-2: #2f8f5b;
+  --c-brand-soft: #e7f1e9;
+  --c-accent: #d39b2f;
+  --c-accent-soft: #fbf1dc;
+  --c-danger: #c1443c;
+  --radius-lg: 1.25rem;
+  --radius-md: 0.9rem;
+  --shadow: 0 10px 28px rgba(23, 59, 45, 0.10);
+}
+
+.cust-body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-ink);
+  font-family: "Sarabun", "Segoe UI", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- แถบหัว ---------- */
+.cust-topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  background: var(--c-brand);
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.cust-brand { font-weight: 800; font-size: 1.25rem; display: flex; align-items: center; gap: .5rem; white-space: nowrap; }
+.cust-brand i { color: var(--c-accent); font-size: 1.6rem; }
+.cust-topbar .spacer { flex: 1; }
+.cust-pill {
+  display: inline-flex; align-items: center; gap: .35rem;
+  background: rgba(255,255,255,.12); color: #fff; border: 0;
+  border-radius: 999px; padding: .45rem .9rem; font-weight: 600; font-size: .95rem;
+  text-decoration: none; white-space: nowrap;
+}
+.cust-pill:hover { background: rgba(255,255,255,.2); color: #fff; }
+.cust-pill-accent { background: var(--c-accent); color: #1f2a24; }
+.cust-pill-accent:hover { background: #e2ad44; color: #1f2a24; }
+
+/* ---------- แท็บหมวดหมู่ ---------- */
+.cat-tabs {
+  display: flex; gap: .6rem; overflow-x: auto; padding: .25rem 0 .75rem;
+  scrollbar-width: none;
+}
+.cat-tabs::-webkit-scrollbar { display: none; }
+.cat-tab {
+  flex: 0 0 auto; border: 2px solid var(--c-line); background: var(--c-surface);
+  color: var(--c-ink); border-radius: 999px; padding: .55rem 1.2rem;
+  font-weight: 700; font-size: 1rem; cursor: pointer; transition: all .15s ease;
+}
+.cat-tab.active { background: var(--c-brand); border-color: var(--c-brand); color: #fff; }
+
+/* ---------- การ์ดเมนู ---------- */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 1rem;
+}
+.m-card {
+  background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--radius-md);
+  overflow: hidden; display: flex; flex-direction: column; cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease; position: relative;
+  text-align: left; padding: 0; color: inherit; font: inherit;
+}
+.m-card:hover, .m-card:focus-visible { transform: translateY(-2px); box-shadow: var(--shadow); outline: none; }
+.m-card:active { transform: scale(.98); }
+.m-img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: #f2eee2; }
+.m-img-ph { display: flex; align-items: center; justify-content: center; color: #b7ae94; font-size: 2.6rem; }
+.m-body { padding: .7rem .85rem .85rem; display: flex; flex-direction: column; gap: .2rem; flex: 1; }
+.m-name { font-weight: 700; font-size: 1.05rem; line-height: 1.3; }
+.m-price { color: var(--c-brand-2); font-weight: 800; font-size: 1.15rem; margin-top: auto; }
+.m-badge-qty {
+  position: absolute; top: .6rem; right: .6rem; min-width: 2rem; height: 2rem; padding: 0 .5rem;
+  border-radius: 999px; background: var(--c-accent); color: #1f2a24; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,.15);
+}
+.m-soldout { cursor: not-allowed; opacity: .55; filter: grayscale(70%); }
+.m-soldout:hover { transform: none; box-shadow: none; }
+.m-ribbon {
+  position: absolute; top: .6rem; left: .6rem; background: var(--c-danger); color: #fff;
+  font-size: .8rem; font-weight: 700; padding: .2rem .6rem; border-radius: .4rem;
+}
+
+/* ---------- ปุ่มใหญ่สำหรับจอสัมผัส ---------- */
+.btn-touch {
+  border: 0; border-radius: var(--radius-md); padding: 1rem 1.25rem; font-weight: 800;
+  font-size: 1.15rem; display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  cursor: pointer; transition: filter .15s ease, transform .1s ease;
+}
+.btn-touch:active { transform: scale(.98); }
+.btn-touch:disabled { opacity: .45; cursor: not-allowed; }
+.btn-brand { background: var(--c-brand); color: #fff; }
+.btn-brand:hover { filter: brightness(1.15); color: #fff; }
+.btn-accent { background: var(--c-accent); color: #1f2a24; }
+.btn-accent:hover { filter: brightness(1.06); }
+.btn-ghost { background: var(--c-surface); color: var(--c-ink); border: 2px solid var(--c-line); }
+
+/* ---------- ตัวปรับจำนวน ---------- */
+.stepper { display: inline-flex; align-items: center; gap: .5rem; }
+.stepper button {
+  width: 3rem; height: 3rem; border-radius: 50%; border: 2px solid var(--c-line); background: #fff;
+  font-size: 1.4rem; font-weight: 800; color: var(--c-brand); display: flex; align-items: center; justify-content: center;
+}
+.stepper output { min-width: 2.5rem; text-align: center; font-size: 1.4rem; font-weight: 800; }
+.stepper-sm button { width: 2.2rem; height: 2.2rem; font-size: 1.1rem; }
+.stepper-sm output { min-width: 1.8rem; font-size: 1.05rem; }
+
+/* ---------- ชิป Add-on ---------- */
+.addon-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.addon-chip {
+  border: 2px solid var(--c-line); background: #fff; border-radius: 999px; padding: .55rem 1rem;
+  font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: .4rem;
+}
+.addon-chip input { display: none; }
+.addon-chip:has(input:checked) { border-color: var(--c-brand-2); background: var(--c-brand-soft); color: var(--c-brand); }
+.addon-chip .price { color: var(--c-muted); font-weight: 500; }
+
+/* ---------- การ์ดทั่วไป ---------- */
+.cust-card { background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--radius-lg); }
+.cust-hero {
+  background: linear-gradient(135deg, #fffdf7, var(--c-brand-soft));
+  border: 1px solid rgba(23,59,45,.08); border-radius: var(--radius-lg); padding: 1.5rem;
+}
+.eyebrow-c { color: #7b5b2d; font-size: .8rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+
+/* ---------- ไมโครโฟน ---------- */
+.voice-pulse { color: var(--c-brand-2); animation: voicePulse 1.1s ease-in-out infinite; }
+@keyframes voicePulse { 0%,100% { opacity: .45; transform: scale(1); } 50% { opacity: 1; transform: scale(1.12); } }
+.voice-panel { min-height: 80px; }
+
+/* ---------- แถบสรุปตะกร้าด้านล่าง (มือถือ / หน้าออนไลน์) ---------- */
+.cart-bar {
+  position: sticky; bottom: 0; z-index: 15; background: var(--c-surface);
+  border-top: 1px solid var(--c-line); box-shadow: 0 -8px 24px rgba(23,59,45,.08);
+  padding: .8rem 1rem; display: flex; align-items: center; gap: 1rem;
+}
+.cart-bar .sum { flex: 1; }
+.cart-bar .sum .t { font-size: 1.35rem; font-weight: 800; color: var(--c-brand); }
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-pulse { animation: none; }
+  .m-card, .btn-touch { transition: none; }
+}
+.btn-touch.listening { background: var(--c-danger) !important; color: #fff !important; }
+
+/* ---------- จอเล็ก (มือถือ) ---------- */
+@media (max-width: 576px) {
+  .cust-topbar { gap: .5rem; padding: .7rem .8rem; }
+  .cust-brand { font-size: 1.05rem; }
+  .cust-brand i { font-size: 1.3rem; }
+  .cust-pill { padding: .4rem .65rem; font-size: .85rem; }
+  .cust-topbar .hide-sm { display: none; }
+  .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
+  .m-name { font-size: .95rem; }
+  .m-price { font-size: 1.05rem; }
+  .btn-touch { padding: .85rem 1rem; font-size: 1.05rem; }
+}
+
+/* ============================================================
+   หน้าสั่งออนไลน์ (on-) — จอใหญ่: เมนูซ้าย ตะกร้าขวา · มือถือ: รายการเมนู + ตะกร้าเลื่อนขึ้น
+   ============================================================ */
+.on-wrap { max-width: 1200px; margin: 0 auto; padding: 1rem 1rem 2rem; }
+.on-wrap [hidden] { display: none !important; }
+.on-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 1.5rem; align-items: start; }
+
+.on-active {
+  display: flex; align-items: center; gap: .75rem; margin-bottom: .6rem; padding: .6rem .9rem;
+  background: var(--c-brand-soft); border: 1px solid rgba(47,143,91,.25); border-radius: var(--radius-md);
+  color: var(--c-brand); text-decoration: none; font-weight: 600;
+}
+.on-active:hover { color: var(--c-brand); filter: brightness(.98); }
+.on-active .q { background: var(--c-brand); color: #fff; border-radius: .5rem; padding: .1rem .55rem; font-weight: 800; }
+.on-active .go { white-space: nowrap; font-weight: 700; }
+
+.on-intro {
+  display: flex; justify-content: space-between; align-items: flex-end; gap: .5rem 1rem; flex-wrap: wrap;
+  background: linear-gradient(135deg, #fffdf7, var(--c-brand-soft));
+  border: 1px solid rgba(23,59,45,.08); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-bottom: .75rem;
+}
+.on-intro h1 { font-size: 1.6rem; font-weight: 800; margin: 0; }
+.on-intro-note { color: var(--c-muted); font-weight: 600; }
+.on-note-warn {
+  background: var(--c-accent-soft); border: 1px solid #f0d9a6; color: #7b5b2d;
+  border-radius: var(--radius-md); padding: .5rem .8rem; font-size: .92rem; margin-bottom: .75rem;
+}
+
+.on-toolbar {
+  position: sticky; top: var(--on-top, 62px); z-index: 10; background: var(--c-bg);
+  display: flex; align-items: center; gap: .75rem; padding: .4rem 0 .5rem;
+}
+.on-toolbar .cat-tabs { flex: 1; min-width: 0; padding: .2rem 0; }
+.on-voice { flex: 0 0 auto; padding: .55rem 1rem; font-size: 1rem; border-radius: 999px; }
+.on-voice-panel { min-height: 0; }
+.on-voice-panel:not(:empty) { margin-bottom: .75rem; }
+
+.on-menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+.on-item { cursor: default; }
+.on-item:active { transform: none; }
+.on-item.on-picked { border-color: var(--c-brand-2); box-shadow: 0 0 0 2px var(--c-brand-2); }
+.on-thumb { position: relative; }
+.on-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: auto; padding-top: .35rem; }
+.on-row .m-price { margin-top: 0; }
+.on-add {
+  border: 0; background: var(--c-brand); color: #fff; border-radius: 999px; padding: .45rem .95rem;
+  font-weight: 700; display: inline-flex; align-items: center; gap: .25rem; cursor: pointer;
+}
+.on-add:hover { filter: brightness(1.15); }
+.on-addons { margin-top: .6rem; gap: .4rem; }
+.on-addons .addon-chip { padding: .3rem .7rem; font-size: .9rem; }
+
+.on-cart {
+  position: sticky; top: calc(var(--on-top, 62px) + 1rem); display: flex; flex-direction: column;
+  max-height: calc(100vh - var(--on-top, 62px) - 2rem); overflow: hidden;
+  background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--radius-lg); box-shadow: var(--shadow);
+}
+.on-cart-head { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.1rem; border-bottom: 1px solid var(--c-line); }
+.on-close { display: none; border: 0; background: transparent; font-size: 1.5rem; color: var(--c-muted); padding: 0 .25rem; }
+.on-cart-body { flex: 1; overflow-y: auto; padding: .25rem 1.1rem 1rem; }
+.on-line { display: flex; gap: .75rem; padding: .7rem 0; border-bottom: 1px dashed var(--c-line); }
+.on-empty { text-align: center; color: var(--c-muted); padding: 1.25rem 0 .5rem; }
+.on-empty i { font-size: 2.2rem; color: #c9bfa5; }
+.on-section { margin-top: 1rem; }
+.on-label { display: block; font-weight: 700; margin-bottom: .45rem; }
+.on-slots { display: flex; flex-wrap: wrap; gap: .4rem; }
+.on-slot { padding: .35rem .8rem; font-size: .95rem; }
+.on-cart-foot { padding: 1rem 1.1rem; border-top: 1px solid var(--c-line); background: #fffdf7; }
+.on-total { font-size: 1.5rem; font-weight: 800; color: var(--c-brand); }
+.on-backdrop, .on-bottombar { display: none; }
+
+/* แท็บเล็ตและมือถือ: ตะกร้ากลายเป็นแผ่นเลื่อนขึ้นจากด้านล่าง */
+@media (max-width: 991.98px) {
+  .on-wrap { padding-bottom: 6rem; }
+  .on-layout { grid-template-columns: minmax(0, 1fr); }
+  .on-main { min-width: 0; }
+  .on-cart {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 40; max-height: 88vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0; transform: translateY(105%); transition: transform .25s ease;
+  }
+  body.on-cart-open { overflow: hidden; }
+  body.on-cart-open .on-cart { transform: none; }
+  .on-close { display: inline-flex; }
+  .on-cart-foot { padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
+  .on-backdrop {
+    display: block; position: fixed; inset: 0; z-index: 35; background: rgba(15,25,20,.45);
+    opacity: 0; pointer-events: none; transition: opacity .2s ease;
+  }
+  body.on-cart-open .on-backdrop { opacity: 1; pointer-events: auto; }
+  .on-bottombar {
+    display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    padding: .65rem .9rem calc(.65rem + env(safe-area-inset-bottom));
+    background: linear-gradient(rgba(244,241,234,0), var(--c-bg) 35%);
+  }
+  .on-open-cart { border-radius: 999px; box-shadow: var(--shadow); }
+  .on-badge {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 1.9rem; height: 1.9rem;
+    padding: 0 .4rem; border-radius: 999px; background: var(--c-accent); color: var(--c-ink); font-size: .95rem;
+  }
+}
+
+/* มือถือ: เมนูเป็นแถว รูปซ้าย ปุ่มเพิ่มขวา */
+@media (max-width: 576px) {
+  .on-wrap { padding-left: .75rem; padding-right: .75rem; padding-top: .75rem; }
+  .on-intro { padding: .8rem 1rem; }
+  .on-intro h1 { font-size: 1.25rem; }
+  .on-intro-note { font-size: .88rem; }
+  .on-toolbar { gap: .5rem; }
+  .on-voice { padding: .5rem .8rem; font-size: .9rem; }
+  .on-menu { grid-template-columns: 1fr; gap: .6rem; }
+  .on-item { flex-direction: row; }
+  .on-thumb { flex: 0 0 104px; width: 104px; }
+  .on-item .m-img { height: 100%; min-height: 104px; aspect-ratio: auto; }
+  .on-item .m-body { padding: .65rem .75rem; }
+  .on-item .m-name { font-size: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) { .on-cart, .on-backdrop { transition: none; } }

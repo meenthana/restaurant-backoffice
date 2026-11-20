@@ -1,0 +1,22 @@
+/* Role identity is independent from green/red status semantics. */
+body.service-kitchen { --brand:#7c2d12; --brand-2:#c2410c; --brand-soft:#fff0e5; }
+body.service-cashier { --brand:#4c1d95; --brand-2:#7c3aed; --brand-soft:#f1eafe; }
+body.service-kiosk { --c-brand:#143b75; --c-brand-2:#2563eb; --c-brand-soft:#eaf1ff; }
+body.service-kiosk #scr-welcome { background:radial-gradient(circle at 30% 20%,#2563eb,#143b75 65%); }
+.service-context { padding:.6rem 1rem; background:var(--brand-soft,#edf2fa); border-left:5px solid var(--brand,#143b75); border-radius:8px; margin-bottom:1rem; font-weight:bold; }
+.queue-type-single { color:#1649a5; background:#e8f0ff; }
+.queue-type-multi { color:#6b21a8; background:#f3e8ff; }
+.queue-type-other { color:#374151; background:#f3f4f6; }
+.queue-category { display:inline-block; padding:.3rem .7rem; border-radius:8px; font-weight:bold; }
+.member-fields { max-width:540px; margin:1rem auto; text-align:left; }
+.member-fields input { font-size:1.1rem; }
+.tracking-page { margin:0; background:#edf2fa; color:#17243a; font:18px/1.6 'Segoe UI',Tahoma,sans-serif; }
+.tracking-card,.queue-board { max-width:760px; margin:24px auto; padding:24px; background:white; border-radius:16px; }
+.tracking-card h1 { font-size:4rem; margin:0; text-align:center; border-radius:12px; }
+.tracking-card section { border-top:1px solid #cbd5e1; margin-top:20px; padding-top:10px; }
+.tracking-card button { padding:12px; font-size:1rem; cursor:pointer; }
+.status-steps { display:flex; flex-wrap:wrap; gap:1.8rem; padding-left:24px; }
+.queue-board { max-width:1200px; }.board-columns { display:grid; grid-template-columns:1fr 1fr; gap:24px; }.board-number { display:inline-block; margin:6px; border-radius:12px; padding:10px 20px; font-size:2.5rem; font-weight:bold; }
+.voice-kitchen { border:2px solid #c2410c; padding:16px; border-radius:12px; margin-bottom:20px; background:#fff7ed; }
+@media(max-width:600px){.tracking-card,.queue-board{margin:0;padding:16px;border-radius:0;}.board-columns{grid-template-columns:1fr;}}
+@media print { .app-navbar,.service-context,.no-print,button { display:none!important; } }

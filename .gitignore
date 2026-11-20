@@ -1,0 +1,6 @@
+.vscode/
+*.log
+config/database.local.php
+config/*.local.php
+*.private.php
+config/private.php

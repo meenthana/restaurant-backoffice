@@ -1,0 +1,7 @@
+Options -Indexes
+RewriteEngine On
+RewriteRule ^(?:config|classes|includes|sql|scripts|_backup)(?:/|$) - [F,L,NC]
+RewriteRule ^(?:\.|README|CODE_MAP) - [F,L,NC]
+<FilesMatch "\.(sql|zip|log|bak|env|ini)$">
+    Require all denied
+</FilesMatch>

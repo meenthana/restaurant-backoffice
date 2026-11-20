@@ -1,0 +1,21 @@
+.printer-notice{display:flex;gap:12px;padding:18px;background:#eff6ff;border:1px solid #cbdffb;border-radius:14px;color:#193b63}
+.printer-notice>i{font-size:24px}.printer-card{border:1px solid #e2e8f0;border-top:5px solid #2874c7;border-radius:16px;overflow:hidden;box-shadow:0 5px 18px #172b4d08}
+.printer-cashier{border-top-color:#8054b0}.printer-state{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.printer-next{background:#f7f9fc;border:1px dashed #ccd5df;border-radius:10px}
+.printer-card .form-control,.printer-card .form-select,.printer-card .btn{min-height:46px}.printer-card .form-label{font-weight:600}.printer-card textarea.form-control{min-height:90px}
+@media(max-width:575px){.printer-notice{padding:14px}.printer-state .badge{white-space:normal;text-align:left;line-height:1.5}}
+.printer-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.printer-option{display:flex;align-items:center;gap:10px;border:2px solid #dce2e9;border-radius:12px;padding:16px;min-height:64px;cursor:pointer;background:white}
+.printer-option:has(input:checked){border-color:#2874c7;background:#eff6ff}.printer-cashier .printer-option:has(input:checked){border-color:#8054b0;background:#f6f0fc}
+.printer-option:focus-within{outline:3px solid #9ec5fe;outline-offset:2px}.printer-option input{width:20px;height:20px;flex-shrink:0}
+@media(max-width:575px){.printer-options{grid-template-columns:1fr}}
+/* การเชื่อมต่อ + ขนาดกระดาษ */
+.printer-options-4{grid-template-columns:repeat(4,minmax(0,1fr))}.printer-options-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.printer-conn,.printer-paper{flex-direction:column;align-items:flex-start;text-align:left;position:relative;padding-top:18px}
+.printer-conn input,.printer-paper input{position:absolute;top:12px;right:12px}
+.printer-conn>i{font-size:30px;color:#2874c7}.printer-cashier .printer-conn>i{color:#8054b0}
+.printer-conn b,.printer-paper b{display:block;font-size:1.05rem}.printer-conn small,.printer-paper small{display:block;color:#64748b;line-height:1.4}
+.printer-conn.is-unsupported{opacity:.55}.printer-conn.is-unsupported small{color:#b45309}
+.paper-icon{display:block;height:44px;border:2px solid #94a3b8;border-bottom-style:dashed;border-radius:3px;background:repeating-linear-gradient(#fff 0 7px,#e2e8f0 7px 8px)}
+.printer-detect{background:#f7f9fc;border:1px dashed #ccd5df;border-radius:12px;padding:16px}
+@media(max-width:991px){.printer-options-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:575px){.printer-options-4,.printer-options-3{grid-template-columns:1fr}}
