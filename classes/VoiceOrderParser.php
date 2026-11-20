@@ -43,60 +43,95 @@ class VoiceOrderParser
     // คำปฏิเสธที่ทำให้ Add-on ที่ตามมา "ไม่ถูกเลือก"
     private const NEGATIONS = ['ไม่เอา', 'ไม่ใส่', 'ไม่ต้อง', 'งด', 'ไม่'];
 
+    // คำพูดที่เป็น "หมายเหตุถึงครัว": [ที่ได้ยิน, หมายเหตุที่บันทึก]
+    // ถ้าคำที่ได้ยินมีชื่อตัวเลือกเสริมอยู่ (เช่น ไข่ดาวเยิ้ม) ชื่อนั้นถูกเก็บไว้ให้เลือกตัวเลือกเสริมต่อ
+    private const NOTE_ALIASES = [
+        ['ไข่ดาวไม่สุก', 'ไข่ดาวไม่สุก'], ['ไข่ดาวเยิ้มๆ', 'ไข่ดาวไม่สุก'], ['ไข่ดาวเยิ้ม', 'ไข่ดาวไม่สุก'],
+        ['ไข่ดาวสุกๆ', 'ไข่ดาวสุก'], ['ไข่ดาวสุก', 'ไข่ดาวสุก'], ['ไข่ดาวกรอบๆ', 'ไข่ดาวกรอบ'], ['ไข่ดาวกรอบ', 'ไข่ดาวกรอบ'],
+        ['ไข่เยิ้มๆ', 'ไข่ไม่สุก'], ['ไข่เยิ้ม', 'ไข่ไม่สุก'], ['ไข่ไม่สุก', 'ไข่ไม่สุก'], ['ไข่สุกๆ', 'ไข่สุก'],
+        ['เยิ้มๆ', 'ไข่ไม่สุก'], ['เยิ้ม', 'ไข่ไม่สุก'], ['ยางมะตูม', 'ไข่ไม่สุก'], ['ไม่สุก', 'ไข่ไม่สุก'],
+        ['ไม่เผ็ดเลย', 'ไม่เผ็ด'], ['ไม่เอาเผ็ด', 'ไม่เผ็ด'], ['ไม่ต้องเผ็ด', 'ไม่เผ็ด'], ['ไม่ใส่พริก', 'ไม่เผ็ด'],
+        ['ไม่เอาพริก', 'ไม่เผ็ด'], ['ไม่เผ็ด', 'ไม่เผ็ด'],
+        ['เผ็ดนิดหน่อย', 'เผ็ดน้อย'], ['เผ็ดนิดนึง', 'เผ็ดน้อย'], ['เผ็ดนิดเดียว', 'เผ็ดน้อย'], ['เผ็ดน้อย', 'เผ็ดน้อย'],
+        ['พริกน้อย', 'เผ็ดน้อย'],
+        ['เผ็ดมากๆ', 'เผ็ดมาก'], ['เผ็ดจัด', 'เผ็ดมาก'], ['เผ็ดๆ', 'เผ็ดมาก'], ['เผ็ดมาก', 'เผ็ดมาก'], ['พริกเยอะ', 'เผ็ดมาก'],
+        ['ไม่เอาผัก', 'ไม่ใส่ผัก'], ['ไม่ใส่ผัก', 'ไม่ใส่ผัก'],
+        ['ไม่เอาผงชูรส', 'ไม่ใส่ผงชูรส'], ['ไม่ใส่ผงชูรส', 'ไม่ใส่ผงชูรส'], ['ไม่ใส่ชูรส', 'ไม่ใส่ผงชูรส'],
+    ];
+
+    // คำท้ายที่ตัดออกจากหมายเหตุแบบ "ไม่ใส่..." เช่น "ไม่ใส่หอมนะครับ" -> "ไม่ใส่หอม"
+    private const NOTE_TAIL = ['ครับ', 'ค่ะ', 'คะ', 'นะ', 'ด้วย', 'จ้า', 'หน่อย', 'เลย'];
+
     // ================================================================
 
-    // transcript:string, normalized:string,
+    // แยกคำพูดเป็นรายการ: เมนู + จำนวน + ตัวเลือกเสริม + หมายเหตุ
+    // ท่อนที่ไม่ตรงเมนู ตัวเลือก หรือหมายเหตุใด ๆ ถือเป็นเสียงรบกวน (เช่น คนคุยกันข้างหลัง) และไม่ใส่ตะกร้า
     public static function parse(string $transcript): array
     {
         $threshold = (float) AppSetting::get('voice_match_threshold', '0.62');
         $menus  = self::menuIndex();
         $addons = self::addonIndex();
+        $noteRules = self::noteRules($addons);
 
         $normalized = self::normalize($transcript);
-        $segments   = self::segment($normalized);
+        $segments = [];
+        foreach (self::segment($normalized) as $seg) {
+            foreach (self::splitByMenus(preg_replace('/\s+/u', '', $seg), $menus, $addons) as $part) $segments[] = $part;
+        }
 
         $items = [];
-        $unmatched = [];
+        $ignored = [];
 
         foreach ($segments as $segment) {
             if (self::strip($segment) === '') continue;
 
-            [$qty, $rest] = self::extractQuantity($segment);
-            $match = self::bestMatch($rest !== '' ? $rest : $segment, $menus);
+            [$notes, $rest] = self::extractNotes($segment, $noteRules);
+            [$qty, $rest] = self::extractQuantity($rest);
+            $match = self::bestMatch($rest, $menus, $addons);
 
             if ($match === null || $match['score'] < $threshold) {
-                // เช่น "กะเพราสองจาน | ไข่ดาว" ท่อนนี้เป็นตัวเลือกเสริมของเมนูก่อนหน้า
+                // ท่อนต่อท้าย เช่น "| ไข่ดาวด้วย" หรือ "| ไม่เผ็ดนะ" เป็นของเมนูก่อนหน้า
                 $last = count($items) - 1;
-                $extra = $last >= 0 ? self::findAddons($segment, $addons, $items[$last]['menu_id']) : [];
-                if ($extra) {
+                if ($last >= 0) {
+                    $extra = self::findAddons($rest, $addons, $items[$last]['menu_id']);
                     $have = array_column($items[$last]['addons'], 'addon_id');
                     foreach ($extra as $x) {
                         if (!in_array($x['addon_id'], $have, true)) $items[$last]['addons'][] = $x;
                     }
-                    continue;
+                    $more = array_merge($notes, self::freeNotes($rest, $addons));
+                    if ($more) $items[$last]['notes'] = array_values(array_unique(array_merge($items[$last]['notes'], $more)));
+                    if ($extra || $more) continue;
+                    // "ไม่เอาไข่ดาว" ต่อท้าย = ไม่เลือกตัวเลือกนั้น
+                    if (preg_match('/^(' . implode('|', self::NEGATIONS) . ')/u', self::strip($rest))) continue;
                 }
-                // "ไม่เอาไข่ดาว" ต่อท้าย = ไม่เลือกตัวเลือกนั้น ไม่ต้องแจ้งว่าไม่เข้าใจ
-                if ($last >= 0 && preg_match('/^(' . implode('|', self::NEGATIONS) . ')/u', self::strip($segment))) {
-                    continue;
-                }
-                $unmatched[] = $segment;
+                $ignored[] = $segment;
                 continue;
             }
 
+            $menuId = (int) $match['row']['menu_id'];
+            // ตัดชื่อเมนูออกก่อนหาตัวเลือกเสริม กัน "ข้าวไข่เจียว" ได้ตัวเลือก "ไข่เจียว" ซ้ำ
+            $addonText = isset($match['cand']) ? str_replace($match['cand'], ' ', preg_replace('/\s+/u', '', $rest)) : $rest;
+            $found = self::findAddons($addonText, $addons, $menuId);
             $items[] = [
-                'menu_id'       => (int) $match['row']['menu_id'],
+                'menu_id'       => $menuId,
                 'menu_name'     => $match['row']['name'],
                 'price'         => (float) $match['row']['price'],
                 'quantity'      => $qty,
-                'addons'        => self::findAddons($segment, $addons, $match['row']['menu_id']),
+                'addons'        => $found,
+                'notes'         => array_values(array_unique(array_merge($notes, self::freeNotes($rest, $addons)))),
                 'confidence'    => round($match['score'], 3),
-                // คะแนนกลาง ๆ = เดาได้แต่ไม่มั่นใจ ให้หน้าจอไฮไลต์ไว้ให้คนยืนยัน
+                // คะแนนกลาง ๆ = เดาได้แต่ไม่มั่นใจ ให้หน้าจอไฮไลต์ไว้ให้คนตรวจ
                 'needs_confirm' => $match['score'] < 0.78,
                 'segment'       => trim($segment),
             ];
         }
 
-        // รวมรายการเมนูเดียวกันที่มี Add-on ชุดเดียวกัน
+        foreach ($items as &$it) {
+            $it['notes'] = self::refineNotes($it['notes'], $it['addons']);
+            $it['note'] = mb_substr(implode(', ', $it['notes']), 0, 120);
+        }
+        unset($it);
+
         $items = self::mergeDuplicates($items);
 
         // เมนูที่ปิดขายหรือวัตถุดิบหลักไม่พอ ไม่ใส่ตะกร้า แต่บอกผู้ใช้
@@ -112,11 +147,126 @@ class VoiceOrderParser
 
         return [
             'unavailable' => $unavailable,
-            'transcript' => $transcript,
-            'normalized' => $normalized,
-            'items'      => array_values($items),
-            'unmatched'  => $unmatched,
+            'transcript'  => $transcript,
+            'normalized'  => $normalized,
+            'items'       => array_values($items),
+            'unmatched'   => $ignored,
+            'ignored'     => $ignored,
         ];
+    }
+
+    // ================================================================
+
+    // กฎหมายเหตุ: คำพูดในตัว + คำที่ร้านตั้งไว้ในหลังบ้าน (เรียงคำยาวก่อน)
+    private static function noteRules(array $addons): array
+    {
+        $rules = [];
+        foreach (self::NOTE_ALIASES as [$heard, $note]) $rules[$heard] = $note;
+        require_once __DIR__ . '/ItemNote.php';
+        foreach (ItemNote::keywords() as $kw) {
+            $key = preg_replace('/\s+/u', '', self::normalize($kw));
+            if ($key !== '' && !isset($rules[$key])) $rules[$key] = $kw;
+        }
+        $out = [];
+        foreach ($rules as $heard => $note) {
+            $keep = '';
+            foreach ($addons as $a) {
+                if (mb_strpos($heard, $a['row']['name']) !== false) { $keep = $a['row']['name']; break; }
+            }
+            $out[] = ['heard' => $heard, 'note' => $note, 'keep' => $keep];
+        }
+        usort($out, fn($x, $y) => mb_strlen($y['heard']) <=> mb_strlen($x['heard']));
+        return $out;
+    }
+
+    private static function extractNotes(string $segment, array $rules): array
+    {
+        $notes = [];
+        foreach ($rules as $r) {
+            if (mb_strpos($segment, $r['heard']) === false) continue;
+            $notes[] = $r['note'];
+            $segment = str_replace($r['heard'], $r['keep'] !== '' ? ' ' . $r['keep'] . ' ' : ' ', $segment);
+        }
+        return [array_values(array_unique($notes)), trim(preg_replace('/\s+/u', ' ', $segment))];
+    }
+
+    // "ไม่ใส่หอม" / "ไม่เอาถั่ว" ที่ไม่ใช่ตัวเลือกเสริม -> หมายเหตุ
+    private static function freeNotes(string $text, array $addons): array
+    {
+        $text = preg_replace('/\s+/u', '', $text);
+        $notes = [];
+        if (!preg_match_all('/(ไม่ใส่|ไม่เอา)([\x{0E00}-\x{0E7F}]{2,12})/u', $text, $m, PREG_SET_ORDER)) return [];
+        foreach ($m as $hit) {
+            $what = $hit[2];
+            foreach ($addons as $a) {
+                $p = mb_strpos($what, $a['row']['name']);
+                if ($p !== false) $what = mb_substr($what, 0, $p);
+            }
+            foreach (self::NEGATIONS as $neg) {
+                $p = mb_strpos($what, $neg);
+                if ($p !== false) $what = mb_substr($what, 0, $p);
+            }
+            do {
+                $before = $what;
+                foreach (self::NOTE_TAIL as $t) {
+                    if ($what !== '' && mb_substr($what, -mb_strlen($t)) === $t) $what = mb_substr($what, 0, -mb_strlen($t));
+                }
+            } while ($what !== $before);
+            if (mb_strlen($what) >= 2 && !in_array($what, ['แล้ว', 'อะไร', 'ครับ', 'ค่ะ'], true)) $notes[] = 'ไม่ใส่' . $what;
+        }
+        return $notes;
+    }
+
+    // "ไข่ไม่สุก" + เลือกไข่ดาว -> "ไข่ดาวไม่สุก"
+    private static function refineNotes(array $notes, array $addons): array
+    {
+        $hasFried = false;
+        foreach ($addons as $a) if (mb_strpos($a['name'], 'ไข่ดาว') !== false) $hasFried = true;
+        $out = [];
+        foreach ($notes as $n) {
+            if ($hasFried && $n === 'ไข่ไม่สุก') $n = 'ไข่ดาวไม่สุก';
+            if ($hasFried && $n === 'ไข่สุก') $n = 'ไข่ดาวสุก';
+            if (!in_array($n, $out, true)) $out[] = $n;
+        }
+        return $out;
+    }
+
+    // ประโยคเดียวที่พูดหลายจานติดกัน เช่น "กะเพราหมูสับไข่ดาวผัดไทยกุ้งสด" -> ตัดตามตำแหน่งชื่อเมนู
+    private static function splitByMenus(string $text, array $menus, array $addons): array
+    {
+        // ชื่อที่ตรงกับตัวเลือกเสริม (เช่น "ไข่เจียว") ไม่นับเป็นจุดเริ่มจานใหม่
+        $addonNames = array_map(fn($a) => $a['row']['name'], $addons);
+        $hits = [];
+        foreach ($menus as $m) {
+            foreach ($m['candidates'] as $cand) {
+                if (mb_strlen($cand) < 4 || in_array($cand, $addonNames, true)) continue;
+                $offset = 0;
+                while (($pos = mb_strpos($text, $cand, $offset)) !== false) {
+                    $hits[] = ['pos' => $pos, 'len' => mb_strlen($cand)];
+                    $offset = $pos + 1;
+                }
+            }
+        }
+        if (count($hits) < 2) return [$text];
+        // ชื่อยาวชนะ และไม่ให้ทับกัน
+        usort($hits, fn($a, $b) => $b['len'] <=> $a['len'] ?: $a['pos'] <=> $b['pos']);
+        $taken = [];
+        foreach ($hits as $h) {
+            foreach ($taken as $t) {
+                if ($h['pos'] < $t['pos'] + $t['len'] && $t['pos'] < $h['pos'] + $h['len']) continue 2;
+            }
+            $taken[] = $h;
+        }
+        if (count($taken) < 2) return [$text];
+        usort($taken, fn($a, $b) => $a['pos'] <=> $b['pos']);
+        $parts = [];
+        $cuts = array_column($taken, 'pos');
+        $cuts[0] = 0;
+        foreach ($cuts as $i => $c) {
+            $len = isset($cuts[$i + 1]) ? $cuts[$i + 1] - $c : null;
+            $parts[] = $len === null ? mb_substr($text, $c) : mb_substr($text, $c, $len);
+        }
+        return array_values(array_filter($parts, fn($p) => trim($p) !== ''));
     }
 
     // ================================================================
@@ -247,20 +397,40 @@ class VoiceOrderParser
         return $out;
     }
 
-    private static function bestMatch(string $segment, array $menus): ?array
+    private static function bestMatch(string $segment, array $menus, array $addons = []): ?array
     {
-        $needle = self::strip($segment);
-        if ($needle === '') return null;
-
+        $compact = preg_replace('/[\s0-9]/u', '', $segment);
+        // 1) ชื่อเมนูอยู่ในประโยคตรง ๆ (ชื่อยาวสุดชนะ) แม้มีคำอื่นปนอยู่
         $best = null;
         foreach ($menus as $m) {
-            // เทียบกับทั้งชื่อจริงและคำเรียกลัดทุกตัว เลือกคะแนนที่ดีที่สุด
+            foreach ($m['candidates'] as $cand) {
+                if (mb_strlen($cand) >= 3 && mb_strpos($compact, $cand) !== false
+                    && ($best === null || mb_strlen($cand) > $best['len'])) {
+                    $best = ['row' => $m['row'], 'score' => 1.0, 'len' => mb_strlen($cand), 'cand' => $cand];
+                }
+            }
+        }
+        if ($best) return $best;
+
+        // 2) ไม่ตรงเป๊ะ: ตัดชื่อตัวเลือกเสริมออกก่อน แล้วเทียบความคล้ายทั้งท่อนและทีละช่วง
+        foreach ($addons as $a) $compact = str_replace($a['row']['name'], '', $compact);
+        $needle = self::strip($compact);
+        if ($needle === '') return null;
+
+        foreach ($menus as $m) {
             $score = 0.0;
             foreach ($m['candidates'] as $cand) {
                 $s = self::similarity($needle, $cand);
-                // ถ้าสิ่งที่ลูกค้าพูดเป็นส่วนหนึ่งของชื่อเมนูตรง ๆ ให้โบนัส
-                if (mb_strlen($needle) >= 3 && mb_strpos($cand, $needle) !== false) {
-                    $s = max($s, 0.92);
+                if (mb_strlen($needle) >= 3 && mb_strpos($cand, $needle) !== false) $s = max($s, 0.92);
+                // มีคำอื่นปนหน้า/หลัง: เทียบเฉพาะช่วงที่ยาวใกล้ชื่อเมนู
+                $len = mb_strlen($cand);
+                $n = mb_strlen($needle);
+                if ($n > $len + 1) {
+                    for ($w = max(2, $len - 1); $w <= $len + 1; $w++) {
+                        for ($i = 0; $i + $w <= $n; $i++) {
+                            $s = max($s, self::similarity(mb_substr($needle, $i, $w), $cand) * 0.95);
+                        }
+                    }
                 }
                 if ($s > $score) $score = $s;
             }
@@ -366,7 +536,7 @@ class VoiceOrderParser
         $merged = [];
         foreach ($items as $it) {
             $addonKey = implode(',', array_column($it['addons'], 'addon_id'));
-            $key = $it['menu_id'] . '|' . $addonKey;
+            $key = $it['menu_id'] . '|' . $addonKey . '|' . ($it['note'] ?? '');
             if (isset($merged[$key])) {
                 $merged[$key]['quantity'] += $it['quantity'];
                 $merged[$key]['confidence'] = max($merged[$key]['confidence'], $it['confidence']);
