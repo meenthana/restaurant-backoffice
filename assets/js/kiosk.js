@@ -173,6 +173,27 @@
     $('btn-card-back').addEventListener('click', function () { cardReset(); show('scr-welcome'); });
 
     $('btn-member-edit').addEventListener('click', function(){memberReset(); show('scr-member');});
+    // ป้ายสถานะบนแถบบน: ใครเป็นคนสั่ง (กดเพื่อเปลี่ยนได้)
+    var memberName = '';
+    function memberLabel() {
+        var mode = $('member-mode').value;
+        if (mode === 'existing') return 'สมาชิก: คุณ' + memberName;
+        if (mode === 'register') return 'สมัครใหม่: คุณ' + memberName;
+        return 'ไม่ใช่สมาชิก';
+    }
+    function renderMemberPill() {
+        var b = $('btn-member-edit'), mode = $('member-mode').value;
+        b.innerHTML = '';
+        var i = document.createElement('i');
+        i.className = 'ti ' + (mode === 'existing' ? 'ti-star' : mode === 'register' ? 'ti-user-plus' : 'ti-user');
+        var t = document.createElement('span');
+        t.className = 'mp-name';
+        t.textContent = memberLabel();
+        b.appendChild(i); b.appendChild(document.createTextNode(' ')); b.appendChild(t);
+        b.classList.toggle('is-member', mode !== 'guest');
+        b.title = memberLabel() + ' · แตะเพื่อเปลี่ยน';
+        b.setAttribute('aria-label', memberLabel() + ' แตะเพื่อเปลี่ยน');
+    }
     // ---------- เลือกสมาชิกแบบปุ่ม + แป้นตัวเลข ----------
     function renderPhone() {
         var d = $('member-phone').value, mask = '___-___-____', out = '', i = 0;
@@ -184,6 +205,8 @@
         $('member-error').textContent = '';
         if (mode === 'guest') {
             $('member-phone').value = ''; $('member-name').value = ''; $('member-consent').checked = false;
+            memberName = '';
+            renderMemberPill();
             show('scr-menu');
             return;
         }
@@ -200,6 +223,8 @@
         $('member-step-choose').hidden = false;
         $('member-step-phone').hidden = true;
         $('member-register-fields').hidden = true;
+        memberName = '';
+        renderMemberPill();
         renderPhone();
     }
     document.querySelectorAll('.mem-btn').forEach(function (b) {
@@ -229,7 +254,11 @@
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ mode: mode, phone: phone })
         }).then(function (r) { return r.json(); }).then(function (d) {
-            if (d.ok) show('scr-menu');
+            if (d.ok) {
+                memberName = mode === 'register' ? $('member-name').value.trim().split(/\s+/)[0].slice(0, 30) : (d.name || 'สมาชิก');
+                renderMemberPill();
+                show('scr-menu');
+            }
             else $('member-error').textContent = d.error || 'ตรวจเบอร์ไม่สำเร็จ';
         }).catch(function () {
             $('member-error').textContent = 'เชื่อมต่อไม่ได้ กรุณาลองใหม่';
@@ -493,7 +522,8 @@
                 (l.note ? '<div class="rv-note">หมายเหตุ: ' + esc(l.note) + '</div>' : '') +
                 '</div><div class="fw-bold text-nowrap">' + baht(lineTotal(l.menuId, l.qty, l.addons)) + '</div></div>';
         }).join('');
-        $('pay-service').textContent = (state.service === 'takeaway' ? 'สั่งกลับบ้าน' : 'ทานที่ร้าน') + ' · ' + cartCount() + ' จาน';
+        $('pay-service').textContent = (state.service === 'takeaway' ? 'สั่งกลับบ้าน' : 'ทานที่ร้าน') + ' · ' + cartCount() + ' จาน' +
+            ($('member-mode').value !== 'guest' ? ' · สั่งโดย' + memberLabel() : '');
         $('pay-card').hidden = !state.card;
         $('pay-card').textContent = state.card ? state.card.label : '';
     }

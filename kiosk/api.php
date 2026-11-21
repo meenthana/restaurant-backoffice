@@ -61,11 +61,17 @@ try {
         if (empty($_SESSION['kiosk_mode'])) out(['ok' => false, 'error' => 'กรุณาเปิดหน้าตู้สั่งอาหารใหม่อีกครั้ง'], 403);
         $tries = array_filter($_SESSION['kiosk_member_fail'] ?? [], fn($t) => $t > time() - 300);
         if (count($tries) >= 8) out(['ok' => false, 'error' => 'กรอกเบอร์ไม่ตรงหลายครั้ง กรุณาเรียกพนักงาน หรือรอ 5 นาที'], 429);
+        // หน้าตู้แสดงชื่อสมาชิก จึงจำกัดจำนวนครั้งที่ค้นเบอร์ได้ ไม่ให้ไล่กรอกเบอร์คนอื่นเพื่อดูชื่อ
+        $looks = array_filter($_SESSION['kiosk_member_look'] ?? [], fn($t) => $t > time() - 300);
+        if (count($looks) >= 15) out(['ok' => false, 'error' => 'ค้นหาสมาชิกหลายครั้งเกินไป กรุณาเรียกพนักงาน หรือรอ 5 นาที'], 429);
+        $looks[] = time();
+        $_SESSION['kiosk_member_look'] = array_values($looks);
         $body = json_decode(file_get_contents('php://input'), true) ?: [];
         $mode = (string) ($body['mode'] ?? '');
         if (!in_array($mode, ['existing', 'register'], true)) out(['ok' => false, 'error' => 'ตัวเลือกสมาชิกไม่ถูกต้อง'], 422);
         try {
-            $status = PhoneMember::lookup((string) ($body['phone'] ?? ''));
+            $found = PhoneMember::check((string) ($body['phone'] ?? ''));
+            $status = $found['status'];
         } catch (InvalidArgumentException $e) {
             out(['ok' => false, 'error' => $e->getMessage()], 422);
         }
@@ -82,7 +88,7 @@ try {
             out(['ok' => false, 'error' => $error], 422);
         }
         $_SESSION['kiosk_member_fail'] = [];
-        out(['ok' => true]);
+        out(['ok' => true, 'name' => $mode === 'existing' ? $found['name'] : null]);
     }
     if ($action === 'place' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($_SESSION['kiosk_mode'])) {

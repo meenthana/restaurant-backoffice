@@ -198,6 +198,10 @@ $config = [
       .k-steps-bar li.now .n { border-color: #fff; color: #fff; box-shadow: none; }
       .k-steps-bar li.done .n { background: var(--c-accent); border-color: var(--c-accent); color: var(--c-ink); }
       @media (max-width: 1150px) { .k-steps-bar { visibility: hidden; } }
+      @media (max-width: 1440px) { .k-steps-bar li { font-size: 0; gap: 0; } .k-steps-bar li.now { font-size: .95rem; gap: .45rem; } }
+      .member-pill { max-width: 22rem; display: inline-flex; align-items: center; gap: .35rem; }
+      .member-pill .mp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .member-pill.is-member { background: var(--c-accent); color: var(--c-ink); border-color: var(--c-accent); font-weight: 700; }
 
       /* ---- v3: ต้อนรับ ---- */
       .diy-card { margin-top: 2.2rem; display: flex; gap: 1rem; align-items: center; text-align: left; max-width: 640px;
@@ -344,7 +348,7 @@ $config = [
         <button class="cust-pill" id="btn-service" type="button"><i class="ti ti-armchair"></i> <span>ทานที่ร้าน</span></button>
         <span class="cust-pill card-pill" id="pill-card" hidden></span>
         <ol class="k-steps k-steps-bar" aria-label="ขั้นตอนการสั่ง"></ol>
-        <button class="cust-pill" id="btn-member-edit" type="button" <?= $config['serviceReady'] ? '' : 'hidden' ?>>สมาชิก</button>
+        <button class="cust-pill member-pill" id="btn-member-edit" type="button" <?= $config['serviceReady'] ? '' : 'hidden' ?>><i class="ti ti-user"></i> <span class="mp-name">ไม่ใช่สมาชิก</span></button>
         <button class="cust-pill" id="btn-restart" type="button"><i class="ti ti-refresh"></i> <span class="hide-sm">เริ่มใหม่</span></button>
     </div>
 

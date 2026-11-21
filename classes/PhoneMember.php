@@ -6,7 +6,13 @@ class PhoneMember
     // ตรวจเบอร์ที่ตู้ก่อนเข้าหน้าเมนู (อ่านอย่างเดียว ไม่สร้างสมาชิก): member | none | duplicate | suspended
     public static function lookup(string $phone): string
     {
-        if (!ServiceFlow::ready()) return 'none';
+        return self::check($phone)['status'];
+    }
+
+    // เหมือน lookup แต่คืนชื่อสมาชิกแบบย่อด้วย ไว้แสดงบนหน้าตู้
+    public static function check(string $phone): array
+    {
+        if (!ServiceFlow::ready()) return ['status' => 'none', 'name' => null];
         $phone = ServiceFlow::phone($phone);
         $db = getDB();
         $stmt = $db->prepare('SELECT member_id FROM member_phone_accounts WHERE phone=? AND member_id IS NOT NULL');
@@ -18,12 +24,26 @@ class PhoneMember
                 catch (InvalidArgumentException $e) { }
             }
         }
-        if (!$ids) return 'none';
-        if (count(array_unique($ids)) > 1) return 'duplicate';
-        $stmt = $db->prepare('SELECT is_suspended FROM members WHERE member_id=?');
+        if (!$ids) return ['status' => 'none', 'name' => null];
+        if (count(array_unique($ids)) > 1) return ['status' => 'duplicate', 'name' => null];
+        $stmt = $db->prepare('SELECT is_suspended, display_name FROM members WHERE member_id=?');
         $stmt->execute([$ids[0]]);
-        $suspended = $stmt->fetchColumn();
-        return ($suspended === false || (int)$suspended === 1) ? 'suspended' : 'member';
+        $row = $stmt->fetch();
+        if (!$row || (int)$row['is_suspended'] === 1) return ['status' => 'suspended', 'name' => null];
+        return ['status' => 'member', 'name' => self::shortName((string)$row['display_name'])];
+    }
+
+    // ใครก็กรอกเบอร์ที่ตู้ได้ จึงแสดงชื่อแรกเต็ม ส่วนนามสกุลเหลือตัวแรก เช่น "ธนา ศ."
+    public static function shortName(string $name): string
+    {
+        $parts = array_values(array_filter(preg_split('/\s+/u', trim($name), -1, PREG_SPLIT_NO_EMPTY) ?: [],
+            fn($w) => preg_match('/\p{L}/u', $w)));
+        if (!$parts) return 'สมาชิก';
+        $first = mb_substr($parts[0], 0, 30);
+        if (count($parts) === 1) return $first;
+        $last = end($parts);
+        preg_match('/^[เแโใไ]?\X/u', $last, $m);
+        return $first . ' ' . ($m[0] ?? mb_substr($last, 0, 1)) . '.';
     }
 
     // Called only from order submission; no public directory lookup or profile disclosure.
