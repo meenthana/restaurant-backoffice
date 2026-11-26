@@ -163,7 +163,9 @@ class Auth
     // ช่วยคำนวณว่าไฟล์ที่เรียกอยู่ลึกจาก root กี่ชั้น (สำหรับ redirect กลับ login.php ที่ root)
     private static function pathDepthFromModules(): int
     {
-        // modules/xxx/yyy.php อยู่ลึก 2 ชั้นจาก root เสมอในโครงสร้างโปรเจคนี้
-        return 2;
+        $root = str_replace('\\', '/', (string) realpath(__DIR__ . '/..'));
+        $script = str_replace('\\', '/', (string) realpath($_SERVER['SCRIPT_FILENAME'] ?? ''));
+        if ($root === '' || !str_starts_with($script, $root . '/')) return 2;
+        return substr_count(substr($script, strlen($root) + 1), '/');
     }
 }
