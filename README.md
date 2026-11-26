@@ -1,4 +1,4 @@
-# ระบบสั่งอาหารด้วยตนเองและจัดการงานครัว สำหรับร้านอาหารตามสั่งขนาดเล็ก (V3)
+# ระบบสั่งอาหารด้วยตนเองและจัดการงานครัว สำหรับร้านอาหารตามสั่งขนาดเล็ก
 
 Self-Service Ordering and Kitchen Management System for Small Made-to-Order Restaurants
 
