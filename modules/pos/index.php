@@ -116,9 +116,26 @@ require_once __DIR__ . '/../../includes/header.php';
             <tfoot><tr><th>ยอดที่ชำระ</th><th class="text-end" id="ho-total"></th></tr></tfoot>
           </table>
           <div id="ho-code-wrap" class="mb-2">
-            <label for="ho-code" class="form-label fw-bold">รหัส 4 หลักบนบัตรที่ลูกค้ายื่นคืน</label>
-            <input id="ho-code" name="card_code" class="form-control form-control-lg mono" inputmode="numeric" maxlength="4">
-            <div id="ho-code-error" class="text-danger small fw-bold mt-1" role="alert"></div>
+            <div class="fw-bold text-center mb-2">รหัส 4 หลักบนบัตรที่ลูกค้ายื่นคืน</div>
+            <div class="pin-boxes" id="ho-code-boxes" aria-live="polite"><span></span><span></span><span></span><span></span></div>
+            <input type="hidden" id="ho-code" name="card_code" value="">
+            <div class="pin-pad" id="ho-code-pad" aria-label="แป้นกรอกรหัสบัตร">
+              <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+              <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+              <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+              <button type="button" data-k="clear" class="pin-fn">ล้าง</button><button type="button" data-k="0">0</button><button type="button" data-k="back" class="pin-fn" aria-label="ลบตัวสุดท้าย"><i class="ti ti-backspace"></i></button>
+            </div>
+            <div id="ho-code-error" class="text-danger small fw-bold mt-2 text-center" role="alert"></div>
+            <style>
+              .pin-boxes { display: flex; gap: .6rem; justify-content: center; margin-bottom: .9rem; }
+              .pin-boxes span { width: 3.4rem; height: 4rem; border: 3px solid #ddd6c8; border-radius: .9rem; background: #fff;
+                                display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 800; }
+              .pin-boxes span.on { border-color: #7c3aed; }
+              .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; max-width: 340px; margin: 0 auto; }
+              .pin-pad button { font-size: 1.5rem; font-weight: 800; padding: .55rem 0; border-radius: .8rem; border: 2px solid #ddd6c8; background: #fff; }
+              .pin-pad button:active { transform: scale(.97); }
+              .pin-pad .pin-fn { font-size: 1.05rem; color: #6c757d; }
+            </style>
           </div>
           <div id="ho-verified" class="alert alert-success py-2 small mb-2" hidden><i class="ti ti-circle-check"></i> รหัสบัตรตรงกับออเดอร์นี้</div>
           <div id="ho-notready" class="alert alert-warning py-2 small mb-0" hidden></div>
@@ -191,7 +208,7 @@ require_once __DIR__ . '/../../includes/header.php';
     var needCode = false;
     modalEl.addEventListener('shown.bs.modal', function () {
         window.handoverOpen = true;
-        if (needCode) $('ho-code').focus(); else $('ho-submit').focus();
+        if (needCode) modalEl.focus(); else $('ho-submit').focus();
     });
     modalEl.addEventListener('hidden.bs.modal', function () { window.handoverOpen = false; });
 
@@ -235,6 +252,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 $('ho-total').textContent = '฿' + Number(d.total).toLocaleString('th-TH', { minimumFractionDigits: 2 });
                 needCode = d.needs_code;
                 $('ho-code').value = d.verified ? code : '';
+                renderPin();
                 $('ho-code-error').textContent = '';
                 $('ho-code-wrap').hidden = !d.needs_code;
                 $('ho-verified').hidden = !d.verified;
@@ -255,12 +273,30 @@ require_once __DIR__ . '/../../includes/header.php';
     document.querySelectorAll('.js-handover').forEach(function (b) {
         b.addEventListener('click', function () { open('order_id=' + b.dataset.order, ''); });
     });
-    $('ho-code').addEventListener('input', function () { $('ho-code-error').textContent = ''; });
+    function renderPin() {
+        var v = $('ho-code').value;
+        $('ho-code-boxes').querySelectorAll('span').forEach(function (b, i) { b.textContent = v[i] || ''; b.classList.toggle('on', i === v.length); });
+    }
+    function pinKey(k) {
+        var v = $('ho-code').value;
+        if (k === 'back') v = v.slice(0, -1);
+        else if (k === 'clear') v = '';
+        else if (/^\d$/.test(k) && v.length < 4) v += k;
+        $('ho-code').value = v; $('ho-code-error').textContent = '';
+        renderPin();
+    }
+    $('ho-code-pad').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { pinKey(b.dataset.k); modalEl.focus(); } });
+    // พิมพ์ตัวเลขจากคีย์บอร์ดได้ และกด Enter เพื่อยืนยันเมื่อครบ 4 หลัก
+    modalEl.addEventListener('keydown', function (e) {
+        if (!needCode) return;
+        if (/^\d$/.test(e.key)) { pinKey(e.key); e.preventDefault(); }
+        else if (e.key === 'Backspace') { pinKey('back'); e.preventDefault(); }
+        else if (e.key === 'Enter' && e.target.tagName !== 'BUTTON' && !$('ho-submit').disabled) { e.preventDefault(); $('handover-form').requestSubmit(); }
+    });
     $('handover-form').addEventListener('submit', function (e) {
         if (needCode && !/^\d{4}$/.test($('ho-code').value.trim())) {
             e.preventDefault();
             $('ho-code-error').textContent = 'กรุณากรอกรหัส 4 หลักบนบัตร';
-            $('ho-code').focus();
         }
     });
 })();
