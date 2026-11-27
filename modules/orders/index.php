@@ -24,7 +24,7 @@ require_once __DIR__ . '/../../includes/header.php';
 ?>
 
 <?php pageHeader('ออเดอร์', 'ออเดอร์ทั้งหมดของร้าน',
-    '<a href="create.php" class="btn btn-dark"><i class="ti ti-plus"></i> รับออเดอร์หน้าร้าน</a>'
+    (in_array(Auth::role(), ['owner','manager','cashier','staff'], true) ? '<a href="../pos/diy.php" class="btn btn-dark"><i class="ti ti-chef-hat"></i> สั่งอาหารตามสั่ง (DIY)</a>' : '')
     . (FEATURE_TABLES ? '<a href="../tables/index.php" class="btn btn-outline-dark"><i class="ti ti-table-plus"></i> เปิดโต๊ะ</a>' : '')); ?>
 
 <div class="card">
