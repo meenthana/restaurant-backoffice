@@ -22,6 +22,16 @@ $isPrepay = $order['status'] === 'pending' && (int) $order['is_paid'] === 0;
 require_once __DIR__ . '/../../classes/ServiceFlow.php';
 $isLegacyService = !$isPrepay && (int) $order['is_paid'] === 0 && ServiceFlow::details($orderId) !== null;
 
+// ร้านเปิดสแกนจ่ายอัตโนมัติ (Omise/SCB): ช่องทางโอนเงินใช้ QR แบบเดียวกับหน้าตู้ ไม่ต้องให้แคชเชียร์กดยืนยันเอง
+require_once __DIR__ . '/../../classes/PaymentGateway.php';
+$gatewayReady = $isPrepay && PaymentGateway::provider() && PaymentGateway::configured();
+$resumeQr = false;
+// เปิดหน้าใหม่ระหว่างรอลูกค้าสแกน (ออเดอร์ที่แคชเชียร์สร้างเอง) ให้กลับมาที่ QR เดิม ส่วนลูกค้าตู้ที่เลือกจ่ายเงินสดยังเริ่มที่เงินสด
+if ($gatewayReady && $order['channel'] === 'walkin' && PaymentGateway::provider() === 'omise') {
+    $gw = OmiseGateway::row($orderId);
+    $resumeQr = $gw && $gw['status'] === 'pending';
+}
+
 if (!$isPrepay && !in_array($order['status'], ['active', 'ready'], true)) {
     die('ออเดอร์นี้ไม่ได้อยู่ในสถานะที่คิดเงินได้ (สถานะปัจจุบัน: ' . htmlspecialchars($order['status']) . ')');
 }
@@ -46,6 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $total = Payment::orderTotal($orderId);
     if ($paymentMethod === 'cash' && $cashReceived < $total) {
         $errors[] = 'เงินที่รับมาน้อยกว่ายอดที่ต้องชำระ';
+    }
+    if ($gatewayReady && $paymentMethod !== 'cash') {
+        $errors[] = 'โอนเงินให้ลูกค้าสแกน QR แล้วรอระบบยืนยันผลอัตโนมัติ';
     }
 
     if (empty($errors)) {
@@ -149,7 +162,7 @@ require_once __DIR__ . '/../../includes/header.php';
                     <label class="btn btn-outline-dark" for="pay-cash"><i class="ti ti-cash"></i> เงินสด</label>
 
                     <input type="radio" class="btn-check" name="payment_method" id="pay-transfer" value="transfer" onchange="togglePay()">
-                    <label class="btn btn-outline-dark" for="pay-transfer"><i class="ti ti-building-bank"></i> โอนเงิน</label>
+                    <label class="btn btn-outline-dark" for="pay-transfer"><i class="ti ti-<?= $gatewayReady ? 'qrcode' : 'building-bank' ?>"></i> โอนเงิน<?= $gatewayReady ? ' (สแกน QR)' : '' ?></label>
                 </div>
 
                 <div id="cashPanel">
@@ -159,8 +172,19 @@ require_once __DIR__ . '/../../includes/header.php';
                     <div id="changeArea"></div>
                 </div>
                 <div id="transferPanel" style="display:none;">
+                    <?php if ($gatewayReady): ?>
+                    <div class="text-center">
+                        <div class="small text-muted mb-2">ให้ลูกค้าสแกนจ่ายพร้อมเพย์ <strong>฿<?= number_format($total, 2) ?></strong></div>
+                        <div id="qrBox" class="d-inline-flex align-items-center justify-content-center border rounded-3 bg-white p-2" style="width:250px;height:250px">
+                            <span class="text-muted small">กำลังสร้าง QR…</span>
+                        </div>
+                        <div id="qrStatus" class="fw-bold mt-2" role="status">กำลังเตรียมการชำระเงิน</div>
+                        <div id="qrSub" class="small text-muted">ไม่ต้องดูสลิป ระบบตรวจผลกับผู้ให้บริการแล้วส่งเข้าครัวให้อัตโนมัติ</div>
+                    </div>
+                    <?php else: ?>
                     <div class="alert alert-success text-center mb-0"><i class="ti ti-circle-check"></i> ยืนยันรับโอนเงินแล้ว — ไม่ต้องคำนวณเงินทอน</div>
                     <label class="form-label mt-2">เลขอ้างอิง (ถ้ามี)</label><input name="reference_no" class="form-control">
+                    <?php endif; ?>
                 </div>
 
                 <button type="submit" class="btn btn-dark w-100 mt-3" id="submitBtn"><i class="ti ti-device-floppy"></i> <?= $isPrepay ? 'รับเงินและส่งเข้าครัว' : ($isLegacyService ? 'รับเงิน (ส่งมอบที่หน้าคิดเงิน)' : 'ยืนยันชำระเงินและปิดบัญชี') ?></button>
@@ -176,10 +200,70 @@ require_once __DIR__ . '/../../includes/header.php';
 const TOTAL = <?= json_encode((float) $total) ?>;
 const DENOMS = [1000, 500, 100, 50, 20, 10, 5, 1];
 
+const GATEWAY = <?= json_encode($gatewayReady) ?>;
+const ORDER_ID = <?= (int) $order['order_id'] ?>;
+let qrStarted = false, qrPoll = null;
+
 function togglePay(){
     const isCash = document.getElementById('pay-cash').checked;
     document.getElementById('cashPanel').style.display = isCash ? 'block' : 'none';
     document.getElementById('transferPanel').style.display = isCash ? 'none' : 'block';
+    if (GATEWAY) {
+        document.getElementById('submitBtn').style.display = isCash ? '' : 'none';
+        if (!isCash) startQr();
+    }
+}
+
+// สร้าง QR ครั้งเดียวต่อออเดอร์ (เปิดหน้าใหม่จะได้ QR เดิมที่ยังไม่หมดอายุ) แล้วเช็กผลทุก 3 วินาที
+function startQr(){
+    if (qrStarted) return;
+    qrStarted = true;
+    const fd = new FormData();
+    fd.append('csrf_token', document.querySelector('input[name=csrf_token]').value);
+    fd.append('order_id', ORDER_ID);
+    fetch('gateway.php?action=start', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(d => {
+            if (!d.ok) throw new Error(d.error || 'สร้าง QR ไม่สำเร็จ');
+            showQr(d.gateway);
+            if (['pending', 'creating', 'unknown'].includes(d.gateway.status)) { qrPoll = setInterval(checkQr, 3000); checkQr(); }
+            else qrState(d.gateway.status);
+        })
+        .catch(e => { qrStarted = false; document.getElementById('qrBox').innerHTML = '<span class="text-danger small">' + e.message + '</span>'; });
+}
+
+function showQr(g){
+    const box = document.getElementById('qrBox');
+    if (g.qr_raw && window.QRCode) { box.innerHTML = ''; new QRCode(box, { text: g.qr_raw, width: 230, height: 230, correctLevel: QRCode.CorrectLevel.M }); }
+    else if (g.qr_url) { const img = document.createElement('img'); img.src = g.qr_url; img.alt = 'QR พร้อมเพย์'; img.width = 230; img.height = 230; box.replaceChildren(img); }
+    document.getElementById('qrStatus').textContent = g.test ? 'โหมดทดสอบ — รอชำระเงิน (ไม่รับเงินจริง)' : 'รอลูกค้าสแกนจ่าย';
+    document.getElementById('qrSub').textContent = g.test
+        ? (g.provider === 'scb' ? 'สแกนด้วยแอป SCB EASY Simulator แล้วหน้านี้จะเปลี่ยนเอง' : 'ยืนยันรายการใน Omise Dashboard (โหมดทดสอบ) แล้วหน้านี้จะเปลี่ยนเอง')
+        : 'โอนสำเร็จแล้ว หน้านี้จะพาไปใบเสร็จและส่งเข้าครัวเอง';
+}
+
+function qrState(status){
+    const msg = { review: 'ได้รับเงินแล้ว แต่ต้องตรวจสอบที่หน้า "รายการ Omise"', failed: 'ชำระไม่สำเร็จ', expired: 'QR หมดอายุหรือถูกยกเลิกแล้ว — รับเป็นเงินสดแทน', unknown: 'กำลังตรวจสอบรายการ ห้ามให้ลูกค้าจ่ายซ้ำ' }[status];
+    if (!msg) return;
+    document.getElementById('qrStatus').textContent = msg;
+    document.getElementById('qrSub').textContent = '';
+    if (status !== 'unknown') { document.getElementById('qrBox').innerHTML = '<i class="ti ti-qrcode-off fs-1 text-muted"></i>'; if (qrPoll) { clearInterval(qrPoll); qrPoll = null; } }
+}
+
+function checkQr(){
+    fetch('gateway.php?action=status&order_id=' + ORDER_ID, { cache: 'no-store' })
+        .then(r => r.json())
+        .then(d => {
+            if (!d.ok) return;
+            if (d.is_paid) {
+                clearInterval(qrPoll); qrPoll = null;
+                document.getElementById('qrStatus').innerHTML = '<span class="text-success"><i class="ti ti-circle-check"></i> ชำระแล้ว ส่งเข้าครัวแล้ว</span>';
+                setTimeout(() => { location.href = 'receipt.php?order_id=' + ORDER_ID; }, 800);
+                return;
+            }
+            if (d.gateway) qrState(d.gateway.status);
+        })
+        .catch(() => { /* เน็ตสะดุด ลองรอบถัดไป */ });
 }
 
 function calcChange(){
@@ -210,7 +294,11 @@ function calcChange(){
         </div>`;
 }
 
-document.addEventListener('DOMContentLoaded', calcChange);
+document.addEventListener('DOMContentLoaded', function () {
+    calcChange();
+    <?php if ($resumeQr): ?>document.getElementById('pay-transfer').checked = true; togglePay();<?php endif; ?>
+});
 </script>
 
+<?php if ($gatewayReady): ?><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script><?php endif; ?>
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
