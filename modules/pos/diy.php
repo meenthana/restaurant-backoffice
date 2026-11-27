@@ -77,8 +77,25 @@ pageHeader('สั่งอาหารตามสั่ง', 'ประกอ�
         <label class="btn btn-outline-dark" for="svc-take">กลับบ้าน</label>
       </div>
       <?php if ($cardRequired): ?>
-      <label class="form-label fw-bold" for="diy-card">รหัสบัตรอาหารตามสั่งที่ให้ลูกค้า</label>
-      <input id="diy-card" class="form-control form-control-lg mono mb-3" inputmode="numeric" maxlength="4" placeholder="รหัส 4 หลักบนบัตร" autocomplete="off">
+      <div class="fw-bold mb-2">รหัสบัตรอาหารตามสั่งที่ให้ลูกค้า</div>
+      <div class="pin-boxes" id="diy-card-boxes" aria-live="polite"><span></span><span></span><span></span><span></span></div>
+      <input type="hidden" id="diy-card" value="">
+      <div class="pin-pad mb-3" id="diy-card-pad" aria-label="แป้นกรอกรหัสบัตร">
+        <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+        <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+        <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+        <button type="button" data-k="clear" class="pin-fn">ล้าง</button><button type="button" data-k="0">0</button><button type="button" data-k="back" class="pin-fn" aria-label="ลบตัวสุดท้าย"><i class="ti ti-backspace"></i></button>
+      </div>
+      <style>
+        .pin-boxes { display: flex; gap: .6rem; justify-content: center; margin-bottom: .9rem; }
+        .pin-boxes span { width: 3.4rem; height: 4rem; border: 3px solid #ddd6c8; border-radius: .9rem; background: #fff;
+                          display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 800; }
+        .pin-boxes span.on { border-color: #7c3aed; }
+        .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+        .pin-pad button { font-size: 1.5rem; font-weight: 800; padding: .55rem 0; border-radius: .8rem; border: 2px solid #ddd6c8; background: #fff; }
+        .pin-pad button:active { transform: scale(.97); }
+        .pin-pad .pin-fn { font-size: 1.05rem; color: #6c757d; }
+      </style>
       <?php endif; ?>
       <div class="d-flex justify-content-between fs-4 fw-bold mb-3"><span>รวม</span><span id="diy-total">฿0</span></div>
       <button type="button" class="btn btn-success btn-lg w-100" id="diy-submit" disabled><i class="ti ti-cash-register"></i> สร้างออเดอร์ แล้วรับเงิน</button>
@@ -197,6 +214,29 @@ pageHeader('สั่งอาหารตามสั่ง', 'ประกอ�
     document.querySelectorAll('.diy-base').forEach(function (b) { b.addEventListener('click', function () { selectBase(+b.dataset.id); }); });
     $('diy-inc').addEventListener('click', function () { $('diy-qty').value = Math.min(20, (parseInt($('diy-qty').value, 10) || 1) + 1); refresh(); });
     $('diy-dec').addEventListener('click', function () { $('diy-qty').value = Math.max(1, (parseInt($('diy-qty').value, 10) || 1) - 1); refresh(); });
+    if (CARD_REQUIRED) {
+        var renderPin = function () {
+            var v = $('diy-card').value;
+            $('diy-card-boxes').querySelectorAll('span').forEach(function (b, i) { b.textContent = v[i] || ''; b.classList.toggle('on', i === v.length); });
+        };
+        var pinKey = function (k) {
+            var v = $('diy-card').value;
+            if (k === 'back') v = v.slice(0, -1);
+            else if (k === 'clear') v = '';
+            else if (/^\d$/.test(k) && v.length < 4) v += k;
+            $('diy-card').value = v; $('diy-submit-error').textContent = '';
+            renderPin();
+        };
+        $('diy-card-pad').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) pinKey(b.dataset.k); });
+        // พิมพ์รหัสจากคีย์บอร์ดได้ด้วย ยกเว้นตอนพิมพ์ในช่องหมายเหตุ/จำนวน
+        document.addEventListener('keydown', function (e) {
+            if (e.target.matches && e.target.matches('textarea, select, input:not([type=radio]):not([type=checkbox])')) return;
+            if (/^\d$/.test(e.key)) { pinKey(e.key); e.preventDefault(); }
+            else if (e.key === 'Backspace') { pinKey('back'); e.preventDefault(); }
+        });
+        renderPin();
+    }
+
     $('diy-qty').addEventListener('input', refresh);
     $('diy-add').addEventListener('click', function () {
         var err = groupError();
@@ -211,7 +251,7 @@ pageHeader('สั่งอาหารตามสั่ง', 'ประกอ�
     $('diy-submit').addEventListener('click', function () {
         var btn = this, card = $('diy-card') ? $('diy-card').value.trim() : '';
         $('diy-submit-error').textContent = '';
-        if (CARD_REQUIRED && !/^\d{4}$/.test(card)) { $('diy-submit-error').textContent = 'กรุณากรอกรหัส 4 หลักบนบัตรอาหารตามสั่ง'; $('diy-card').focus(); return; }
+        if (CARD_REQUIRED && !/^\d{4}$/.test(card)) { $('diy-submit-error').textContent = 'กรุณากรอกรหัส 4 หลักบนบัตรอาหารตามสั่ง'; return; }
         btn.disabled = true;
         var fd = new FormData();
         fd.append('csrf_token', CSRF);
